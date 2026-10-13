@@ -1,0 +1,31 @@
+{
+  "years": 20,
+  "database": "data/market.sqlite",
+  "instruments": [
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "sector": "Информационные технологии"
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "sector": "Информационные технологии"
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "sector": "Потребительские товары длительного пользования"
+    },
+    {
+      "ticker": "JPM",
+      "name": "JPMorgan Chase",
+      "sector": "Финансы"
+    },
+    {
+      "ticker": "XOM",
+      "name": "Exxon Mobil",
+      "sector": "Энергетика"
+    }
+  ]
+}
