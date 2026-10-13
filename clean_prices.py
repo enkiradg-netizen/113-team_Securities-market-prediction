@@ -1,9 +1,5 @@
 import pandas as pd
 
-from download_prices import download_prices
-from load_config import load_config
-from save_prices import save_prices
-
 
 def clean_prices(prices: pd.DataFrame) -> pd.DataFrame:
     """Удаляет дубли, пропуски и некорректные котировки."""
@@ -36,9 +32,3 @@ def clean_prices(prices: pd.DataFrame) -> pd.DataFrame:
     data["Volume"] = data["Volume"].astype("int64")
     print(f"Очистка: было {len(prices)}, осталось {len(data)}, удалено {len(prices) - len(data)}.")
     return data
-
-
-if __name__ == "__main__":
-    config = load_config()
-    prices = clean_prices(download_prices(config))
-    save_prices(prices, config)
