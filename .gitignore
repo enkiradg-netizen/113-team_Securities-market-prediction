@@ -1,0 +1,16 @@
+# Окружение и кеш Python
+.venv/
+__pycache__/
+*.pyc
+
+# Данные и локальная база
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Секреты
+.env
+
+# Системные файлы macOS
+.DS_Store
