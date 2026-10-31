@@ -25,6 +25,12 @@ PROCESSED_DIR = PROJECT_DIR / "data" / "processed"  # готовые: склее
 # США (например, День благодарения) отдельного торгового дня нет.
 FUTURES_CALENDAR = "CME_TradeDate"
 
+# Таймфреймы баров для фьючерсов (так их называет Massive).
+FUTURES_BAR_SIZES = ["15min", "1hour", "4hour"]
+
+# Папка с планом контрактов (его строит contract_plan.py).
+FUTURES_PLAN_DIR = INTERIM_DIR / "futures_plan"
+
 
 def load_instruments() -> dict:
     """Читает общий конфиг инструментов config/instruments.yaml."""
