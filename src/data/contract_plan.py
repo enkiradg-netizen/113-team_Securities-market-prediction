@@ -47,8 +47,12 @@ def make_chain(product: str, roll_months: str) -> list:
     """
     Составляет цепочку контрактов по порядку: от начала периода до года после конца.
 
-    Тикер = код + буква месяца + последняя цифра года, например CLZ1.
-    Через 10 лет тикеры повторяются (CLZ1 бывает и 2021, и 2031 года),
+    Тикер = код + буква месяца + год. У Massive год пишется по-разному:
+    обычно одной цифрой (CLZ1), но у некоторых фьючерсов с середины 2025
+    года — двумя (у газа NGM5, а следующий уже NGN25). Поэтому для каждого
+    контракта возвращаем оба варианта: (короткий, длинный).
+
+    Через 10 лет короткие тикеры повторяются (CLZ1 бывает и 2021, и 2031 года),
     но в нашем окне 2021–2027 цифры года не повторяются.
     """
     chain = []
@@ -56,7 +60,7 @@ def make_chain(product: str, roll_months: str) -> list:
         for letter in roll_months:
             month = MONTH_CODES.index(letter) + 1
             if (year, month) >= (START.year, START.month):
-                chain.append(f"{product}{letter}{year % 10}")
+                chain.append((f"{product}{letter}{year % 10}", f"{product}{letter}{year % 100}"))
     return chain
 
 
@@ -135,9 +139,18 @@ def print_rolls(plan: pd.DataFrame) -> None:
 def build_plan(future: dict, api_key: str) -> None:
     """Строит и сохраняет план для одного фьючерса."""
     product = future["ticker"]
-    chain = make_chain(product, future["roll_months"])
-    print(f"{product}: контрактов в цепочке — {len(chain)}, качаю объёмы...")
-    volumes = {ticker: get_daily_volumes(ticker, api_key) for ticker in chain}
+    pairs = make_chain(product, future["roll_months"])
+    print(f"{product}: контрактов в цепочке — {len(pairs)}, качаю объёмы...")
+
+    # Для каждого контракта пробуем короткий тикер, а если по нему
+    # нет данных — длинный (с двумя цифрами года).
+    chain, volumes = [], {}
+    for short, long in pairs:
+        ticker, by_day = short, get_daily_volumes(short, api_key)
+        if not by_day:
+            ticker, by_day = long, get_daily_volumes(long, api_key)
+        chain.append(ticker)
+        volumes[ticker] = by_day
 
     # Дни плана — торговые дни биржи. Добавляем и дни, где у Massive
     # есть данные, хотя календарь считает их выходными (так было 09.01.2025).
