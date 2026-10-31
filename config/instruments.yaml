@@ -1,0 +1,323 @@
+# Общий список инструментов проекта.
+# Скрипты загрузки берут тикеры только отсюда.
+#
+# Правила отбора:
+# - только основные контракты фьючерсов, без mini, micro и nano;
+# - только инструменты с полной историей за период 15.11.2021 — 30.09.2026,
+#   чтобы данные по всем инструментам были сопоставимы;
+# - всё, что не прошло отбор, перечислено в excluded с причиной.
+#
+# Источники (проверено 31.10.2026):
+# - фьючерсы: группы — списки команды в docs/reference/instruments/ (файлы 1–7);
+#   коды, официальные названия и даты начала торгов — Massive
+#   https://api.massive.com/futures/v1/products
+# - акции: состав секторов GICS — фонды State Street Select Sector SPDR,
+#   повторяющие секторные индексы S&P 500 (XLK, XLC, XLY, XLP, XLF, XLV,
+#   XLI, XLE, XLB, XLRE, XLU); вес в S&P 500 — фонд SPY. Данные на 29.10.2026:
+#   https://www.ssga.com/us/en/intermediary/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx
+#   (для сектора — тот же адрес с кодом фонда вместо spy, например ...-en-xlk.xlsx);
+#   названия, даты листинга и смены тикеров — Massive
+#   https://api.massive.com/v3/reference/tickers
+
+futures:
+  currencies:  # 1_валюты-cme_top_tier.md
+    - {ticker: 6E, name: "Euro/U.S. Dollar (EUR/USD) Futures", name_ru: Евро / доллар США, exchange: CME}
+    - {ticker: 6J, name: "Japanese Yen/U.S. Dollar (JPY/USD) Futures", name_ru: Японская иена / доллар США, exchange: CME}
+    - {ticker: 6B, name: "British Pound Sterling/U.S. Dollar (GBP/USD) Futures", name_ru: Британский фунт / доллар США, exchange: CME}
+    - {ticker: 6A, name: "Australian Dollar/U.S. Dollar (AUD/USD) Futures", name_ru: Австралийский доллар / доллар США, exchange: CME}
+    - {ticker: 6C, name: "Canadian Dollar/U.S. Dollar (CAD/USD) Futures", name_ru: Канадский доллар / доллар США, exchange: CME}
+    - {ticker: 6S, name: "Swiss Franc/U.S. Dollar (CHF/USD) Futures", name_ru: Швейцарский франк / доллар США, exchange: CME}
+    - {ticker: 6M, name: "Mexican Peso/U.S. Dollar (MXN/USD) Futures", name_ru: Мексиканский песо / доллар США, exchange: CME}
+    - {ticker: 6N, name: "New Zealand Dollar/U.S. Dollar (NZD/USD) Futures", name_ru: Новозеландский доллар / доллар США, exchange: CME}
+    # Вместо 6H из списка команды: 6H в Massive только с 2026 года.
+    # Котировка обратная: юаней за доллар США.
+    - {ticker: CNH, name: "U.S. Dollar/Offshore Chinese Renminbi (USD/RMB) Futures", name_ru: Доллар США / офшорный юань, exchange: CME}
+
+  indices:  # 2_мировые-индексы-cme.md
+    - {ticker: ES, name: "E-mini Standard and Poor's 500 Stock Price Index Futures", name_ru: E-mini S&P 500, exchange: CME}
+    - {ticker: NQ, name: "E-mini Nasdaq-100 Index Futures", name_ru: E-mini Nasdaq-100, exchange: CME}
+    - {ticker: YM, name: "E-mini Dow Jones Industrial Average Index Futures", name_ru: E-mini Dow Jones, exchange: CBOT}
+    - {ticker: RTY, name: "E-mini Russell 2000 Index Futures", name_ru: E-mini Russell 2000, exchange: CME}
+    - {ticker: NKD, name: "Nikkei Stock Average Futures", name_ru: Nikkei 225 в долларах, exchange: CME}
+    - {ticker: IBV, name: "USD Denominated Ibovespa Futures", name_ru: Ibovespa в долларах, exchange: CME}
+    - {ticker: E3G, name: "E-mini S&P Europe 350 ESG Index Futures", name_ru: E-mini S&P Europe 350 ESG, exchange: CME}
+
+  bonds:  # 3_облигации-cme.md
+    - {ticker: ZN, name: "U.S. Treasury Note Futures (6½ to 8-Year)", name_ru: 10-летние Treasury Notes, exchange: CBOT}
+    - {ticker: ZF, name: "Medium-Term U.S. Treasury Note Futures (5-Year)", name_ru: 5-летние Treasury Notes, exchange: CBOT}
+    - {ticker: ZT, name: "Short-Term U.S. Treasury Note Futures (2-Year)", name_ru: 2-летние Treasury Notes, exchange: CBOT}
+    - {ticker: ZB, name: "U.S. Treasury Bond Futures", name_ru: 30-летние Treasury Bonds, exchange: CBOT}
+    - {ticker: TN, name: "Ultra 10-Year U.S. Treasury Note Futures", name_ru: Ultra 10-летние Treasury Notes, exchange: CBOT}
+    - {ticker: UB, name: "Ultra U.S. Treasury Bond Futures", name_ru: Ultra Treasury Bonds, exchange: CBOT}
+    - {ticker: Z3N, name: "3-Year U.S. Treasury Note Futures", name_ru: 3-летние Treasury Notes, exchange: CBOT}
+
+  energy:  # 4_энергетика-cme.md
+    - {ticker: CL, name: "Light Sweet Crude Oil Futures", name_ru: Нефть WTI, exchange: NYMEX}
+    - {ticker: NG, name: "Henry Hub Natural Gas Futures", name_ru: Природный газ Henry Hub, exchange: NYMEX}
+    - {ticker: BZ, name: "Brent Crude Oil Last Day Financial Futures", name_ru: Нефть Brent, exchange: NYMEX}
+    - {ticker: RB, name: "RBOB Gasoline Futures", name_ru: Бензин RBOB, exchange: NYMEX}
+    - {ticker: HO, name: "NY Harbor ULSD Futures", name_ru: Дизельное топливо NY Harbor, exchange: NYMEX}
+    # Вместо TTP из списка команды: TTP в Massive только с 2026 года.
+    - {ticker: TTF, name: "Dutch TTF Natural Gas Calendar Month Futures", name_ru: Природный газ TTF (Нидерланды), exchange: NYMEX}
+
+  agriculture:  # 5_сельхозтовары-cme.md
+    - {ticker: ZC, name: "Corn Futures", name_ru: Кукуруза, exchange: CBOT}
+    - {ticker: ZS, name: "Soybean Futures", name_ru: Соя, exchange: CBOT}
+    - {ticker: ZW, name: "Wheat Futures", name_ru: Пшеница SRW, exchange: CBOT}
+    - {ticker: ZM, name: "Soybean Meal Futures", name_ru: Соевый шрот, exchange: CBOT}
+    - {ticker: ZL, name: "Soybean Oil Futures", name_ru: Соевое масло, exchange: CBOT}
+    - {ticker: ZO, name: "Oat Futures", name_ru: Овёс, exchange: CBOT}
+    - {ticker: LE, name: "Live Cattle Futures", name_ru: Живой крупный рогатый скот, exchange: CME}
+    - {ticker: HE, name: "Lean Hog Futures", name_ru: Свиньи, exchange: CME}
+    - {ticker: GF, name: "Feeder Cattle Futures", name_ru: Молодой откормочный скот, exchange: CME}
+    - {ticker: DC, name: "Class III Milk Futures", name_ru: Молоко Class III, exchange: CME}
+
+  metals:  # 6_металлы-cme.md
+    - {ticker: GC, name: "Gold Futures", name_ru: Золото, exchange: COMEX}
+    - {ticker: HG, name: "Copper Futures", name_ru: Медь, exchange: COMEX}
+    - {ticker: SI, name: "Silver Futures", name_ru: Серебро, exchange: COMEX}
+    - {ticker: PL, name: "Platinum Futures", name_ru: Платина, exchange: NYMEX}
+    - {ticker: PA, name: "Palladium Futures", name_ru: Палладий, exchange: NYMEX}
+
+  crypto:  # 7_криптовалюты-cme.md
+    - {ticker: BTC, name: "Bitcoin Futures", name_ru: Биткоин, exchange: CME}
+    - {ticker: ETH, name: "Ether Futures", name_ru: Эфир, exchange: CME}
+
+# Тикеры акций и фьючерсов могут совпадать (CL — нефть WTI и Colgate-Palmolive),
+# поэтому инструмент определяется по паре «класс актива + тикер».
+#
+# Акции: по 10 крупнейших по весу в S&P 500 в каждом секторе GICS
+# на 29.10.2026, только с полной историей. weight — вес в S&P 500, %.
+# previous_tickers — старый тикер и дата смены: данные до этой даты
+# загружаются под старым тикером.
+stocks:
+  information_technology:  # GICS: Information Technology, состав по XLK
+    - {ticker: NVDA, name: "Nvidia Corp", weight: 7.77}
+    - {ticker: AAPL, name: "Apple Inc.", weight: 7.65}
+    - {ticker: MSFT, name: "Microsoft Corp", weight: 5.92}
+    - {ticker: AVGO, name: "Broadcom Inc. Common Stock", weight: 2.47}
+    - {ticker: MU, name: "Micron Technology, Inc.", weight: 1.59}
+    - {ticker: AMD, name: "Advanced Micro Devices", weight: 1.39}
+    - {ticker: INTC, name: "Intel Corp", weight: 0.69}
+    - {ticker: PLTR, name: "Palantir Technologies Inc. Class A Common Stock", weight: 0.68}
+    - {ticker: CSCO, name: "Cisco Systems, Inc. Common Stock (DE)", weight: 0.64}
+    - {ticker: AMAT, name: "Applied Materials Inc", weight: 0.50}
+
+  communication_services:  # GICS: Communication Services, состав по XLC
+    - {ticker: GOOGL, name: "Alphabet Inc. Class A Common Stock", weight: 2.50}
+    - {ticker: META, name: "Meta Platforms, Inc. Class A Common Stock", weight: 2.07, previous_tickers: [{ticker: FB, renamed: "2022-06-09"}]}
+    - {ticker: NFLX, name: "NetFlix Inc", weight: 0.39}
+    - {ticker: DIS, name: "The Walt Disney Company", weight: 0.29}
+    - {ticker: VZ, name: "Verizon Communications", weight: 0.27}
+    - {ticker: T, name: "AT&T Inc.", weight: 0.22}
+    - {ticker: CMCSA, name: "Comcast Corp", weight: 0.12}
+    - {ticker: TMUS, name: "T-Mobile US, Inc.", weight: 0.11}
+    - {ticker: APP, name: "Applovin Corporation Class A Common Stock", weight: 0.10}
+    - {ticker: TTWO, name: "Take-Two Interactive Software Inc", weight: 0.05}
+
+  consumer_discretionary:  # GICS: Consumer Discretionary, состав по XLY
+    - {ticker: AMZN, name: "Amazon.Com Inc", weight: 3.60}
+    - {ticker: TSLA, name: "Tesla, Inc. Common Stock", weight: 1.71}
+    - {ticker: HD, name: "Home Depot, Inc.", weight: 0.49}
+    - {ticker: MCD, name: "McDonald's Corporation", weight: 0.27}
+    - {ticker: TJX, name: "TJX Companies, Inc. (The)", weight: 0.23}
+    - {ticker: SBUX, name: "Starbucks Corp", weight: 0.18}
+    - {ticker: LOW, name: "Lowe's Companies Inc.", weight: 0.17}
+    - {ticker: BKNG, name: "Booking Holdings Inc. Common Stock", weight: 0.17}
+    - {ticker: MAR, name: "Marriott International Class A Common Stock", weight: 0.13}
+    - {ticker: HLT, name: "Hilton Worldwide Holdings Inc.", weight: 0.12}
+
+  consumer_staples:  # GICS: Consumer Staples, состав по XLP
+    - {ticker: WMT, name: "Walmart Inc. Common Stock", weight: 0.81}
+    - {ticker: COST, name: "Costco Wholesale Corp", weight: 0.66}
+    - {ticker: PG, name: "Procter & Gamble Company", weight: 0.56}
+    - {ticker: KO, name: "Coca-Cola Company", weight: 0.54}
+    - {ticker: PM, name: "Philip Morris International Inc.", weight: 0.49}
+    - {ticker: PEP, name: "PepsiCo, Inc.", weight: 0.27}
+    - {ticker: MO, name: "Altria Group, Inc.", weight: 0.19}
+    - {ticker: MDLZ, name: "Mondelez International, Inc. Class A", weight: 0.12}
+    - {ticker: CL, name: "Colgate-Palmolive Company", weight: 0.11}
+    - {ticker: TGT, name: "Target Corporation", weight: 0.10}
+
+  financials:  # GICS: Financials, состав по XLF
+    - {ticker: BRK.B, name: "BERKSHIRE HATHAWAY Class B", weight: 1.52}
+    - {ticker: JPM, name: "JPMorgan Chase & Co.", weight: 1.37}
+    - {ticker: V, name: "VISA Inc.", weight: 1.05}
+    - {ticker: MA, name: "Mastercard Incorporated", weight: 0.77}
+    - {ticker: BAC, name: "Bank of America Corporation", weight: 0.50}
+    - {ticker: GS, name: "Goldman Sachs Group Inc.", weight: 0.41}
+    - {ticker: WFC, name: "Wells Fargo & Co.", weight: 0.39}
+    - {ticker: MS, name: "Morgan Stanley", weight: 0.34}
+    - {ticker: C, name: "Citigroup Inc.", weight: 0.32}
+    - {ticker: AXP, name: "American Express Company", weight: 0.26}
+
+  health_care:  # GICS: Health Care, состав по XLV
+    - {ticker: LLY, name: "Eli Lilly & Co.", weight: 1.65}
+    - {ticker: JNJ, name: "Johnson & Johnson", weight: 1.00}
+    - {ticker: ABBV, name: "ABBVIE INC.", weight: 0.77}
+    - {ticker: UNH, name: "UNITEDHEALTH GROUP INCORPORATED (Delaware)", weight: 0.55}
+    - {ticker: MRK, name: "Merck & Co., Inc.", weight: 0.54}
+    - {ticker: TMO, name: "Thermo Fisher Scientific, Inc.", weight: 0.39}
+    - {ticker: AMGN, name: "Amgen Inc", weight: 0.37}
+    - {ticker: GILD, name: "Gilead Sciences Inc", weight: 0.31}
+    - {ticker: ABT, name: "Abbott Laboratories", weight: 0.27}
+    - {ticker: PFE, name: "Pfizer Inc.", weight: 0.26}
+
+  industrials:  # GICS: Industrials, состав по XLI
+    - {ticker: GE, name: "GE Aerospace", weight: 0.49}
+    - {ticker: CAT, name: "Caterpillar Inc.", weight: 0.45}
+    - {ticker: RTX, name: "RTX Corporation", weight: 0.40}
+    - {ticker: UNP, name: "Union Pacific Corp.", weight: 0.27}
+    - {ticker: DE, name: "Deere & Company", weight: 0.25}
+    - {ticker: ETN, name: "Eaton Corporation, plc Ordinary Shares", weight: 0.23}
+    - {ticker: BA, name: "Boeing Company", weight: 0.20}
+    - {ticker: UBER, name: "Uber Technologies, Inc.", weight: 0.20}
+    - {ticker: LMT, name: "Lockheed Martin Corp.", weight: 0.20}
+    - {ticker: PH, name: "Parker-Hannifin Corporation", weight: 0.18}
+
+  energy:  # GICS: Energy, состав по XLE
+    - {ticker: XOM, name: "ExxonMobil Holdings Corporation", weight: 1.13}
+    - {ticker: CVX, name: "Chevron Corporation", weight: 0.69}
+    - {ticker: COP, name: "ConocoPhillips", weight: 0.27}
+    - {ticker: MPC, name: "MARATHON PETROLEUM CORPORATION", weight: 0.18}
+    - {ticker: VLO, name: "Valero Energy Corporation", weight: 0.17}
+    - {ticker: PSX, name: "PHILLIPS 66", weight: 0.16}
+    - {ticker: WMB, name: "Williams Companies Inc.", weight: 0.14}
+    - {ticker: EOG, name: "EOG Resources, Inc.", weight: 0.13}
+    - {ticker: SLB, name: "SLB Limited", weight: 0.12}
+    - {ticker: TRGP, name: "Targa Resources Corp.", weight: 0.10}
+
+  materials:  # GICS: Materials, состав по XLB
+    - {ticker: LIN, name: "Linde plc Ordinary Share", weight: 0.35}
+    - {ticker: NEM, name: "Newmont Corporation", weight: 0.18}
+    - {ticker: FCX, name: "Freeport-McMoran Inc.", weight: 0.14}
+    - {ticker: ECL, name: "Ecolab, Inc.", weight: 0.11}
+    - {ticker: SHW, name: "The Sherwin-Williams Company", weight: 0.11}
+    - {ticker: APD, name: "Air Products & Chemicals, Inc.", weight: 0.10}
+    - {ticker: NUE, name: "Nucor Corporation", weight: 0.09}
+    - {ticker: CRH, name: "CRH Public Limited Company", weight: 0.09, previous_tickers: [{ticker: CRHC, renamed: "2023-09-25"}]}
+    - {ticker: VMC, name: "Vulcan Materials Company(Holding Company)", weight: 0.05}
+    - {ticker: STLD, name: "Steel Dynamics Inc", weight: 0.05}
+
+  real_estate:  # GICS: Real Estate, состав по XLRE
+    - {ticker: WELL, name: "Welltower Inc.", weight: 0.25}
+    - {ticker: PLD, name: "PROLOGIS, INC.", weight: 0.18}
+    - {ticker: EQIX, name: "Equinix, Inc. Common Stock REIT", weight: 0.15}
+    - {ticker: AMT, name: "American Tower Corporation", weight: 0.13}
+    - {ticker: SPG, name: "Simon Property Group, Inc.", weight: 0.10}
+    - {ticker: DLR, name: "Digital Realty Trust, Inc.", weight: 0.10}
+    - {ticker: O, name: "Realty Income Corporation", weight: 0.08}
+    - {ticker: PSA, name: "Public Storage", weight: 0.08}
+    - {ticker: VMRK, name: "Vivmark Residential", weight: 0.07, previous_tickers: [{ticker: EQR, renamed: "2026-08-18"}]}
+    - {ticker: VTR, name: "Ventas, Inc.", weight: 0.06}
+
+  utilities:  # GICS: Utilities, состав по XLU
+    - {ticker: NEE, name: "NextEra Energy, Inc.", weight: 0.26}
+    - {ticker: SO, name: "The Southern Company", weight: 0.16}
+    - {ticker: DUK, name: "Duke Energy Corporation", weight: 0.15}
+    - {ticker: AEP, name: "American Electric Power Company, Inc.", weight: 0.11}
+    - {ticker: D, name: "Dominion Energy, Inc Common Stock", weight: 0.09}
+    - {ticker: SRE, name: "Sempra", weight: 0.08}
+    - {ticker: ETR, name: "Entergy Corporation", weight: 0.08}
+    - {ticker: XEL, name: "Xcel Energy, Inc.", weight: 0.07}
+    - {ticker: EXC, name: "Exelon Corporation", weight: 0.07}
+    - {ticker: VST, name: "Vistra Corp.", weight: 0.07}
+
+  # Топ-10 S&P 500 по весу на 29.10.2026. Акции уже есть в секторах выше,
+  # поэтому здесь только тикеры. GOOG пропущен: второй класс акций Alphabet.
+  blue_chips: [NVDA, AAPL, MSFT, AMZN, GOOGL, AVGO, META, TSLA, LLY, MU]
+
+# Распределение работы по участникам команды.
+# Каждый загружает и анализирует свои группы, чтобы не дублировать
+# скачивание и разделить объём данных. Скрипты загрузки
+# принимают имя участника и берут только его группы.
+team:
+  vlad:
+    futures: [indices, metals]
+    stocks: [health_care, materials, blue_chips]
+  enkira:
+    futures: [currencies, agriculture]
+    stocks: [information_technology, energy, real_estate]
+  sasha:
+    futures: [bonds, crypto]
+    stocks: [communication_services, financials, utilities]
+  iura:
+    futures: [energy]
+    stocks: [consumer_discretionary, consumer_staples, industrials]
+
+# Инструменты, которые не вошли в проект.
+# Фьючерсы и акции разделены: тикеры у них могут совпадать
+# (например, MCD — micro-фьючерс на канадский доллар и акция McDonald's).
+excluded:
+  futures:
+    # С неполной историей в Massive.
+    - {ticker: 6H, reason: "в Massive с 06.02.2026, взят CNH"}
+    - {ticker: TTP, reason: "в Massive только в 2026 году, взят TTF"}
+    - {ticker: TWE, reason: "в Massive с 13.02.2022"}
+    - {ticker: LBR, reason: "в Massive с 24.07.2022"}
+    - {ticker: TPD, reason: "в Massive с 30.10.2022"}
+    - {ticker: IPC, reason: "в Massive с 25.07.2025"}
+    - {ticker: SOL, reason: "торгуется с 2025 года"}
+    - {ticker: XRP, reason: "торгуется с 2025 года"}
+
+    # Дубли индекса в другой валюте.
+    - {ticker: NIY, reason: "дубль NKD в иенах"}
+    - {ticker: TPY, reason: "дубль TPD в иенах"}
+
+    # Mini, micro и nano: нужны только основные контракты.
+    - {ticker: M6E, reason: "micro-версия 6E"}
+    - {ticker: MJY, reason: "micro-версия 6J"}
+    - {ticker: M6B, reason: "micro-версия 6B"}
+    - {ticker: M6A, reason: "micro-версия 6A"}
+    - {ticker: MCD, reason: "micro-версия 6C"}
+    - {ticker: MSF, reason: "micro-версия 6S"}
+    - {ticker: MIR, reason: "micro INR/USD, основного контракта в списке нет"}
+    - {ticker: E7, reason: "E-mini версия 6E"}
+    - {ticker: J7, reason: "E-mini версия 6J"}
+    - {ticker: MES, reason: "micro-версия ES"}
+    - {ticker: MNQ, reason: "micro-версия NQ"}
+    - {ticker: MYM, reason: "micro-версия YM"}
+    - {ticker: M2K, reason: "micro-версия RTY"}
+    - {ticker: NES, reason: "nano-версия ES"}
+    - {ticker: NNQ, reason: "nano-версия NQ"}
+    - {ticker: NDOW, reason: "nano-версия YM"}
+    - {ticker: N2K, reason: "nano-версия RTY"}
+    - {ticker: ENY, reason: "E-mini версия NIY"}
+    - {ticker: MCL, reason: "micro-версия CL"}
+    - {ticker: MNG, reason: "micro-версия NG"}
+    - {ticker: QG, reason: "E-mini версия NG"}
+    - {ticker: MGC, reason: "micro-версия GC"}
+    - {ticker: SIL, reason: "micro-версия SI"}
+    - {ticker: MHG, reason: "micro-версия HG"}
+    - {ticker: PAM, reason: "micro-версия PA"}
+    - {ticker: QO, reason: "E-mini версия GC"}
+    - {ticker: 1OZ, reason: "1-унцевая версия GC"}
+    - {ticker: MBT, reason: "micro-версия BTC"}
+    - {ticker: MET, reason: "micro-версия ETH"}
+    - {ticker: MSL, reason: "micro-версия SOL"}
+    - {ticker: MXP, reason: "micro-версия XRP"}
+
+  stocks:
+    # Из топ-10 своего сектора, но с неполной историей.
+    - {ticker: GEV, reason: "торгуется с 27.03.2024 (Industrials)"}
+    - {ticker: CEG, reason: "торгуется с 19.01.2022 (Utilities)"}
+    - {ticker: RDDT, reason: "торгуется с 21.03.2024 (Communication Services)"}
+
+    # Дубли.
+    - {ticker: GOOG, reason: "второй класс акций Alphabet, взят GOOGL"}
+
+    # Акции из файла 8_sp500-сектора-топ-10.md, которых нет в официальном
+    # топ-10 сектора на 29.10.2026.
+    - {ticker: LRCX, reason: "Information Technology: 11-е место по весу"}
+    - {ticker: NKE, reason: "Consumer Discretionary: вне топ-16 по весу"}
+    - {ticker: ABNB, reason: "Consumer Discretionary: 15-е место по весу"}
+    - {ticker: KDP, reason: "Consumer Staples: 13-е место по весу"}
+    - {ticker: BLK, reason: "Financials: 11-е место по весу"}
+    - {ticker: ISRG, reason: "Health Care: 11-е место по весу"}
+    - {ticker: FANG, reason: "Energy: 16-е место по весу"}
+    - {ticker: CF, reason: "Materials: вне топ-16 по весу"}
+    - {ticker: DOW, reason: "Materials: 13-е место по весу"}
+    - {ticker: CCI, reason: "Real Estate: 11-е место по весу"}
+    - {ticker: CBRE, reason: "Real Estate: 12-е место по весу"}
+    - {ticker: IRM, reason: "Real Estate: 13-е место по весу"}
+    - {ticker: VICI, reason: "Real Estate: 15-е место по весу"}
