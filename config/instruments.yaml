@@ -60,8 +60,6 @@ futures:
     - {ticker: BZ, name: "Brent Crude Oil Last Day Financial Futures", name_ru: Нефть Brent, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
     - {ticker: RB, name: "RBOB Gasoline Futures", name_ru: Бензин RBOB, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
     - {ticker: HO, name: "NY Harbor ULSD Futures", name_ru: Дизельное топливо NY Harbor, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
-    # Вместо TTP из списка команды: TTP в Massive только с 2026 года.
-    - {ticker: TTF, name: "Dutch TTF Natural Gas Calendar Month Futures", name_ru: Природный газ TTF (Нидерланды), exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
 
   agriculture:  # 5_сельхозтовары-cme.md
     # У части продуктов roll_months короче стандартного цикла CME:
@@ -260,10 +258,11 @@ excluded:
     # Очень низкая ликвидность: внутридневных данных почти нет.
     - {ticker: E3G, reason: "сделки только в 17 днях из ~250 за 2023 год"}
     - {ticker: IBV, reason: "сделки только в 74 днях из ~250 за 2023 год"}
+    - {ticker: TTF, reason: "~68 сделок в день на все контракты за 2023 год; основной рынок TTF — ICE Endex"}
 
     # С неполной историей в Massive.
     - {ticker: 6H, reason: "в Massive с 06.02.2026, взят CNH"}
-    - {ticker: TTP, reason: "в Massive только в 2026 году, взят TTF"}
+    - {ticker: TTP, reason: "в Massive только в 2026 году; замена TTF тоже исключена"}
     - {ticker: TWE, reason: "в Massive с 13.02.2022"}
     - {ticker: LBR, reason: "в Massive с 24.07.2022"}
     - {ticker: TPD, reason: "в Massive с 30.10.2022"}
