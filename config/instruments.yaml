@@ -11,6 +11,9 @@
 # - фьючерсы: группы — списки команды в docs/reference/instruments/ (файлы 1–7);
 #   коды, официальные названия и даты начала торгов — Massive
 #   https://api.massive.com/futures/v1/products
+#   roll_months — торгуемые месяцы: по ним строится цепочка контрактов
+#   для склейки. Основа — циклы CME, проверено по объёмам Massive за 2023 год
+#   (какой контракт был лидером по объёму в каждый день).
 # - акции: состав секторов GICS — фонды State Street Select Sector SPDR,
 #   повторяющие секторные индексы S&P 500 (XLK, XLC, XLY, XLP, XLF, XLV,
 #   XLI, XLE, XLB, XLRE, XLU); вес в S&P 500 — фонд SPY. Данные на 29.10.2026:
@@ -21,67 +24,71 @@
 
 futures:
   currencies:  # 1_валюты-cme_top_tier.md
-    - {ticker: 6E, name: "Euro/U.S. Dollar (EUR/USD) Futures", name_ru: Евро / доллар США, exchange: CME}
-    - {ticker: 6J, name: "Japanese Yen/U.S. Dollar (JPY/USD) Futures", name_ru: Японская иена / доллар США, exchange: CME}
-    - {ticker: 6B, name: "British Pound Sterling/U.S. Dollar (GBP/USD) Futures", name_ru: Британский фунт / доллар США, exchange: CME}
-    - {ticker: 6A, name: "Australian Dollar/U.S. Dollar (AUD/USD) Futures", name_ru: Австралийский доллар / доллар США, exchange: CME}
-    - {ticker: 6C, name: "Canadian Dollar/U.S. Dollar (CAD/USD) Futures", name_ru: Канадский доллар / доллар США, exchange: CME}
-    - {ticker: 6S, name: "Swiss Franc/U.S. Dollar (CHF/USD) Futures", name_ru: Швейцарский франк / доллар США, exchange: CME}
-    - {ticker: 6M, name: "Mexican Peso/U.S. Dollar (MXN/USD) Futures", name_ru: Мексиканский песо / доллар США, exchange: CME}
-    - {ticker: 6N, name: "New Zealand Dollar/U.S. Dollar (NZD/USD) Futures", name_ru: Новозеландский доллар / доллар США, exchange: CME}
+    - {ticker: 6E, name: "Euro/U.S. Dollar (EUR/USD) Futures", name_ru: Евро / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6J, name: "Japanese Yen/U.S. Dollar (JPY/USD) Futures", name_ru: Японская иена / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6B, name: "British Pound Sterling/U.S. Dollar (GBP/USD) Futures", name_ru: Британский фунт / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6A, name: "Australian Dollar/U.S. Dollar (AUD/USD) Futures", name_ru: Австралийский доллар / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6C, name: "Canadian Dollar/U.S. Dollar (CAD/USD) Futures", name_ru: Канадский доллар / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6S, name: "Swiss Franc/U.S. Dollar (CHF/USD) Futures", name_ru: Швейцарский франк / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6M, name: "Mexican Peso/U.S. Dollar (MXN/USD) Futures", name_ru: Мексиканский песо / доллар США, exchange: CME, roll_months: HMUZ}
+    - {ticker: 6N, name: "New Zealand Dollar/U.S. Dollar (NZD/USD) Futures", name_ru: Новозеландский доллар / доллар США, exchange: CME, roll_months: HMUZ}
     # Вместо 6H из списка команды: 6H в Massive только с 2026 года.
     # Котировка обратная: юаней за доллар США.
-    - {ticker: CNH, name: "U.S. Dollar/Offshore Chinese Renminbi (USD/RMB) Futures", name_ru: Доллар США / офшорный юань, exchange: CME}
+    # Листинг ежемесячный, но основная торговля в квартальных контрактах;
+    # месячные лидируют по объёму лишь эпизодически, поэтому берём HMUZ.
+    - {ticker: CNH, name: "U.S. Dollar/Offshore Chinese Renminbi (USD/RMB) Futures", name_ru: Доллар США / офшорный юань, exchange: CME, roll_months: HMUZ}
 
   indices:  # 2_мировые-индексы-cme.md
-    - {ticker: ES, name: "E-mini Standard and Poor's 500 Stock Price Index Futures", name_ru: E-mini S&P 500, exchange: CME}
-    - {ticker: NQ, name: "E-mini Nasdaq-100 Index Futures", name_ru: E-mini Nasdaq-100, exchange: CME}
-    - {ticker: YM, name: "E-mini Dow Jones Industrial Average Index Futures", name_ru: E-mini Dow Jones, exchange: CBOT}
-    - {ticker: RTY, name: "E-mini Russell 2000 Index Futures", name_ru: E-mini Russell 2000, exchange: CME}
-    - {ticker: NKD, name: "Nikkei Stock Average Futures", name_ru: Nikkei 225 в долларах, exchange: CME}
-    - {ticker: IBV, name: "USD Denominated Ibovespa Futures", name_ru: Ibovespa в долларах, exchange: CME}
-    - {ticker: E3G, name: "E-mini S&P Europe 350 ESG Index Futures", name_ru: E-mini S&P Europe 350 ESG, exchange: CME}
+    - {ticker: ES, name: "E-mini Standard and Poor's 500 Stock Price Index Futures", name_ru: E-mini S&P 500, exchange: CME, roll_months: HMUZ}
+    - {ticker: NQ, name: "E-mini Nasdaq-100 Index Futures", name_ru: E-mini Nasdaq-100, exchange: CME, roll_months: HMUZ}
+    - {ticker: YM, name: "E-mini Dow Jones Industrial Average Index Futures", name_ru: E-mini Dow Jones, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: RTY, name: "E-mini Russell 2000 Index Futures", name_ru: E-mini Russell 2000, exchange: CME, roll_months: HMUZ}
+    - {ticker: NKD, name: "Nikkei Stock Average Futures", name_ru: Nikkei 225 в долларах, exchange: CME, roll_months: HMUZ}
 
   bonds:  # 3_облигации-cme.md
-    - {ticker: ZN, name: "U.S. Treasury Note Futures (6½ to 8-Year)", name_ru: 10-летние Treasury Notes, exchange: CBOT}
-    - {ticker: ZF, name: "Medium-Term U.S. Treasury Note Futures (5-Year)", name_ru: 5-летние Treasury Notes, exchange: CBOT}
-    - {ticker: ZT, name: "Short-Term U.S. Treasury Note Futures (2-Year)", name_ru: 2-летние Treasury Notes, exchange: CBOT}
-    - {ticker: ZB, name: "U.S. Treasury Bond Futures", name_ru: 30-летние Treasury Bonds, exchange: CBOT}
-    - {ticker: TN, name: "Ultra 10-Year U.S. Treasury Note Futures", name_ru: Ultra 10-летние Treasury Notes, exchange: CBOT}
-    - {ticker: UB, name: "Ultra U.S. Treasury Bond Futures", name_ru: Ultra Treasury Bonds, exchange: CBOT}
-    - {ticker: Z3N, name: "3-Year U.S. Treasury Note Futures", name_ru: 3-летние Treasury Notes, exchange: CBOT}
+    - {ticker: ZN, name: "U.S. Treasury Note Futures (6½ to 8-Year)", name_ru: 10-летние Treasury Notes, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: ZF, name: "Medium-Term U.S. Treasury Note Futures (5-Year)", name_ru: 5-летние Treasury Notes, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: ZT, name: "Short-Term U.S. Treasury Note Futures (2-Year)", name_ru: 2-летние Treasury Notes, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: ZB, name: "U.S. Treasury Bond Futures", name_ru: 30-летние Treasury Bonds, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: TN, name: "Ultra 10-Year U.S. Treasury Note Futures", name_ru: Ultra 10-летние Treasury Notes, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: UB, name: "Ultra U.S. Treasury Bond Futures", name_ru: Ultra Treasury Bonds, exchange: CBOT, roll_months: HMUZ}
+    - {ticker: Z3N, name: "3-Year U.S. Treasury Note Futures", name_ru: 3-летние Treasury Notes, exchange: CBOT, roll_months: HMUZ}
 
   energy:  # 4_энергетика-cme.md
-    - {ticker: CL, name: "Light Sweet Crude Oil Futures", name_ru: Нефть WTI, exchange: NYMEX}
-    - {ticker: NG, name: "Henry Hub Natural Gas Futures", name_ru: Природный газ Henry Hub, exchange: NYMEX}
-    - {ticker: BZ, name: "Brent Crude Oil Last Day Financial Futures", name_ru: Нефть Brent, exchange: NYMEX}
-    - {ticker: RB, name: "RBOB Gasoline Futures", name_ru: Бензин RBOB, exchange: NYMEX}
-    - {ticker: HO, name: "NY Harbor ULSD Futures", name_ru: Дизельное топливо NY Harbor, exchange: NYMEX}
+    - {ticker: CL, name: "Light Sweet Crude Oil Futures", name_ru: Нефть WTI, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
+    - {ticker: NG, name: "Henry Hub Natural Gas Futures", name_ru: Природный газ Henry Hub, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
+    - {ticker: BZ, name: "Brent Crude Oil Last Day Financial Futures", name_ru: Нефть Brent, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
+    - {ticker: RB, name: "RBOB Gasoline Futures", name_ru: Бензин RBOB, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
+    - {ticker: HO, name: "NY Harbor ULSD Futures", name_ru: Дизельное топливо NY Harbor, exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
     # Вместо TTP из списка команды: TTP в Massive только с 2026 года.
-    - {ticker: TTF, name: "Dutch TTF Natural Gas Calendar Month Futures", name_ru: Природный газ TTF (Нидерланды), exchange: NYMEX}
+    - {ticker: TTF, name: "Dutch TTF Natural Gas Calendar Month Futures", name_ru: Природный газ TTF (Нидерланды), exchange: NYMEX, roll_months: FGHJKMNQUVXZ}
 
   agriculture:  # 5_сельхозтовары-cme.md
-    - {ticker: ZC, name: "Corn Futures", name_ru: Кукуруза, exchange: CBOT}
-    - {ticker: ZS, name: "Soybean Futures", name_ru: Соя, exchange: CBOT}
-    - {ticker: ZW, name: "Wheat Futures", name_ru: Пшеница SRW, exchange: CBOT}
-    - {ticker: ZM, name: "Soybean Meal Futures", name_ru: Соевый шрот, exchange: CBOT}
-    - {ticker: ZL, name: "Soybean Oil Futures", name_ru: Соевое масло, exchange: CBOT}
-    - {ticker: ZO, name: "Oat Futures", name_ru: Овёс, exchange: CBOT}
-    - {ticker: LE, name: "Live Cattle Futures", name_ru: Живой крупный рогатый скот, exchange: CME}
-    - {ticker: HE, name: "Lean Hog Futures", name_ru: Свиньи, exchange: CME}
-    - {ticker: GF, name: "Feeder Cattle Futures", name_ru: Молодой откормочный скот, exchange: CME}
-    - {ticker: DC, name: "Class III Milk Futures", name_ru: Молоко Class III, exchange: CME}
+    # У части продуктов roll_months короче стандартного цикла CME:
+    # по данным торговля перескакивает через эти месяцы
+    # (ZC, ZO — без U; ZS — без Q, U; ZM, ZL — без Q, U, V; HE — без K).
+    - {ticker: ZC, name: "Corn Futures", name_ru: Кукуруза, exchange: CBOT, roll_months: HKNZ}
+    - {ticker: ZS, name: "Soybean Futures", name_ru: Соя, exchange: CBOT, roll_months: FHKNX}
+    - {ticker: ZW, name: "Wheat Futures", name_ru: Пшеница SRW, exchange: CBOT, roll_months: HKNUZ}
+    - {ticker: ZM, name: "Soybean Meal Futures", name_ru: Соевый шрот, exchange: CBOT, roll_months: FHKNZ}
+    - {ticker: ZL, name: "Soybean Oil Futures", name_ru: Соевое масло, exchange: CBOT, roll_months: FHKNZ}
+    - {ticker: ZO, name: "Oat Futures", name_ru: Овёс, exchange: CBOT, roll_months: HKNZ}
+    - {ticker: LE, name: "Live Cattle Futures", name_ru: Живой крупный рогатый скот, exchange: CME, roll_months: GJMQVZ}
+    - {ticker: HE, name: "Lean Hog Futures", name_ru: Свиньи, exchange: CME, roll_months: GJMNQVZ}
+    - {ticker: GF, name: "Feeder Cattle Futures", name_ru: Молодой откормочный скот, exchange: CME, roll_months: FHJKQUVX}
+    - {ticker: DC, name: "Class III Milk Futures", name_ru: Молоко Class III, exchange: CME, roll_months: FGHJKMNQUVXZ}
 
   metals:  # 6_металлы-cme.md
-    - {ticker: GC, name: "Gold Futures", name_ru: Золото, exchange: COMEX}
-    - {ticker: HG, name: "Copper Futures", name_ru: Медь, exchange: COMEX}
-    - {ticker: SI, name: "Silver Futures", name_ru: Серебро, exchange: COMEX}
-    - {ticker: PL, name: "Platinum Futures", name_ru: Платина, exchange: NYMEX}
-    - {ticker: PA, name: "Palladium Futures", name_ru: Палладий, exchange: NYMEX}
+    # GC: октябрьский контракт (V) не торгуется как основной, его пропускаем.
+    - {ticker: GC, name: "Gold Futures", name_ru: Золото, exchange: COMEX, roll_months: GJMQZ}
+    - {ticker: HG, name: "Copper Futures", name_ru: Медь, exchange: COMEX, roll_months: HKNUZ}
+    - {ticker: SI, name: "Silver Futures", name_ru: Серебро, exchange: COMEX, roll_months: HKNUZ}
+    - {ticker: PL, name: "Platinum Futures", name_ru: Платина, exchange: NYMEX, roll_months: FJNV}
+    - {ticker: PA, name: "Palladium Futures", name_ru: Палладий, exchange: NYMEX, roll_months: HMUZ}
 
   crypto:  # 7_криптовалюты-cme.md
-    - {ticker: BTC, name: "Bitcoin Futures", name_ru: Биткоин, exchange: CME}
-    - {ticker: ETH, name: "Ether Futures", name_ru: Эфир, exchange: CME}
+    - {ticker: BTC, name: "Bitcoin Futures", name_ru: Биткоин, exchange: CME, roll_months: FGHJKMNQUVXZ}
+    - {ticker: ETH, name: "Ether Futures", name_ru: Эфир, exchange: CME, roll_months: FGHJKMNQUVXZ}
 
 # Тикеры акций и фьючерсов могут совпадать (CL — нефть WTI и Colgate-Palmolive),
 # поэтому инструмент определяется по паре «класс актива + тикер».
@@ -250,6 +257,10 @@ team:
 # (например, MCD — micro-фьючерс на канадский доллар и акция McDonald's).
 excluded:
   futures:
+    # Очень низкая ликвидность: внутридневных данных почти нет.
+    - {ticker: E3G, reason: "сделки только в 17 днях из ~250 за 2023 год"}
+    - {ticker: IBV, reason: "сделки только в 74 днях из ~250 за 2023 год"}
+
     # С неполной историей в Massive.
     - {ticker: 6H, reason: "в Massive с 06.02.2026, взят CNH"}
     - {ticker: TTP, reason: "в Massive только в 2026 году, взят TTF"}
