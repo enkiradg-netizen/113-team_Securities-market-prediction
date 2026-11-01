@@ -110,11 +110,13 @@ def make_plan(chain: list, volumes: dict, days: list) -> pd.DataFrame:
         # (такие дыры бывают, например CLK2 23.03.2022), день не считаем,
         # иначе получился бы ложный переход. Исключения:
         # - фронт уже закончил торговаться — тогда переходим сразу;
-        # - следующий уже обгонял фронт накануне — значит, фронт просто
-        #   перестал торговаться (у Z3NM3 с 01.06.2023 сделок нет совсем,
-        #   все ушли в Z3NU3), и день засчитываем как продолжение обгона.
+        # - следующий уже обгонял фронт накануне и сегодня торгуется —
+        #   значит, фронт просто перестал торговаться (у Z3NM3 с 01.06.2023
+        #   сделок нет совсем, все ушли в Z3NU3), и день засчитываем как
+        #   продолжение обгона. Если данных нет у обоих (ES 18.03.2025),
+        #   это дыра Massive, и день пропускаем.
         front_finished = day > last_day[chain[i]]
-        if front_volume > 0 or front_finished or days_ahead > 0:
+        if front_volume > 0 or front_finished or (days_ahead > 0 and next_volume > 0):
             days_ahead = days_ahead + 1 if next_volume > front_volume else 0
         if i + 2 < len(chain) and (days_ahead >= CONFIRM_DAYS or (front_finished and next_volume > 0)):
             i += 1
