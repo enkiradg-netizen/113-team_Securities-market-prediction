@@ -28,7 +28,7 @@ from datetime import timedelta
 import pandas as pd
 
 from src.data.massive_api import get_api_key, massive_get_all
-from src.data.project_config import (END, FUTURES_CALENDAR, INTERIM_DIR, START,
+from src.data.project_config import (END, FUTURES_CALENDAR, FUTURES_PLAN_DIR, START,
                                      futures_to_process, load_instruments, trading_days)
 
 # Буквы месяцев в тикерах фьючерсов: F — январь, G — февраль, ..., Z — декабрь.
@@ -40,7 +40,6 @@ MONTH_CODES = "FGHJKMNQUVXZ"
 # хотя торговля на декабрь ушла только 17.06.2022.
 CONFIRM_DAYS = 2
 
-PLAN_DIR = INTERIM_DIR / "futures_plan"
 
 
 def make_chain(product: str, roll_months: str) -> list:
@@ -109,10 +108,13 @@ def make_plan(chain: list, volumes: dict, days: list) -> pd.DataFrame:
         next_volume = volume(chain[i + 1], day)
         # Если у Massive за этот день просто нет данных по фронту
         # (такие дыры бывают, например CLK2 23.03.2022), день не считаем,
-        # иначе получился бы ложный переход. Исключение — фронт уже
-        # закончил торговаться: тогда переходим сразу.
+        # иначе получился бы ложный переход. Исключения:
+        # - фронт уже закончил торговаться — тогда переходим сразу;
+        # - следующий уже обгонял фронт накануне — значит, фронт просто
+        #   перестал торговаться (у Z3NM3 с 01.06.2023 сделок нет совсем,
+        #   все ушли в Z3NU3), и день засчитываем как продолжение обгона.
         front_finished = day > last_day[chain[i]]
-        if front_volume > 0 or front_finished:
+        if front_volume > 0 or front_finished or days_ahead > 0:
             days_ahead = days_ahead + 1 if next_volume > front_volume else 0
         if i + 2 < len(chain) and (days_ahead >= CONFIRM_DAYS or (front_finished and next_volume > 0)):
             i += 1
@@ -160,11 +162,11 @@ def build_plan(future: dict, api_key: str) -> None:
     plan = make_plan(chain, volumes, days)
     print_rolls(plan)
 
-    PLAN_DIR.mkdir(parents=True, exist_ok=True)
-    plan.to_csv(PLAN_DIR / f"{product}.csv", index=False)
+    FUTURES_PLAN_DIR.mkdir(parents=True, exist_ok=True)
+    plan.to_csv(FUTURES_PLAN_DIR / f"{product}.csv", index=False)
     no_data = (plan["front_volume"] == 0).sum()
     print(f"{product}: дней в плане — {len(plan)}, из них без данных Massive по фронту — {no_data}")
-    print(f"Файл: {PLAN_DIR / f'{product}.csv'}\n")
+    print(f"Файл: {FUTURES_PLAN_DIR / f'{product}.csv'}\n")
 
 
 def main() -> None:
