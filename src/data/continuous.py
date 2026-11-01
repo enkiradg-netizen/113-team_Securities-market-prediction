@@ -8,8 +8,10 @@
 
 Чтобы убрать прыжок, в момент перехода считаем коэффициент:
     коэффициент = цена нового контракта / цена старого
-на последнем баре перед переходом, где торговались оба. Затем умножаем
-всю историю ДО перехода на этот коэффициент. Последний контракт остаётся
+на последнем часовом баре перед переходом, где торговались оба. Затем
+умножаем всю историю ДО перехода на этот коэффициент. Коэффициенты
+считаем один раз по часовым барам и применяем ко всем таймфреймам,
+чтобы 15 минут, 1 час и 4 часа были склеены одинаково. Последний контракт остаётся
 с настоящими ценами, а прошлое подстраивается под него.
 
 Почему умножаем, а не прибавляем разницу: при сдвиге на разницу
@@ -37,6 +39,7 @@ from src.data.project_config import (END, FUTURES_BAR_SIZES, FUTURES_PLAN_DIR, P
 BARS_DIR = RAW_DIR / "futures" / "bars"
 OUT_DIR = PROCESSED_DIR / "futures_continuous"
 PRICES = ["open", "high", "low", "close"]
+RATIO_BAR_SIZE = "1hour"  # по этим барам считаем коэффициенты переходов
 
 
 def load_bars(product: str, bar_size: str, tickers: set) -> dict:
@@ -64,21 +67,13 @@ def roll_ratio(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | N
     return last["new"] / last["old"]
 
 
-def build_continuous(product: str, bar_size: str, start: str, end: str) -> None:
-    """Склеивает бары одного таймфрейма в один ряд и сохраняет его."""
-    plan = pd.read_csv(FUTURES_PLAN_DIR / f"{product}.csv")
-    plan = plan[(plan["date"] >= start) & (plan["date"] <= end)]
-    bars = load_bars(product, bar_size, set(plan["front"]) | set(plan["next"]))
-
-    # 1. Каждый день берём бары фронта.
-    pieces = []
-    for day, front in zip(plan["date"], plan["front"]):
-        front_bars = bars[front]
-        pieces.append(front_bars[front_bars["session_end_date"] == day])
-    series = pd.concat(pieces, ignore_index=True).rename(columns={"ticker": "contract"})
-    series["factor"] = 1.0
-
-    # 2. На каждом переходе считаем коэффициент и умножаем на него всё, что было раньше.
+def roll_ratios(product: str, plan: pd.DataFrame) -> list:
+    """
+    Считает коэффициенты всех переходов фьючерса по часовым барам.
+    Возвращает список (день перехода, коэффициент).
+    """
+    bars = load_bars(product, RATIO_BAR_SIZE, set(plan["front"]))
+    ratios = []
     rolls = plan[plan["front"] != plan["front"].shift()].iloc[1:]
     previous = plan["front"].shift()
     for index, row in rolls.iterrows():
@@ -87,8 +82,28 @@ def build_continuous(product: str, bar_size: str, start: str, end: str) -> None:
         if ratio is None:
             print(f"  {day} {old} → {new}: нет общего бара, коэффициент не посчитан (оставляем 1)")
             continue
-        series.loc[series["session_end_date"] < day, "factor"] *= ratio
+        ratios.append((day, ratio))
         print(f"  {day} {old} → {new}: коэффициент {ratio:.4f}")
+    return ratios
+
+
+def build_continuous(product: str, bar_size: str, plan: pd.DataFrame, ratios: list) -> None:
+    """Склеивает бары одного таймфрейма в один ряд и сохраняет его."""
+    # Нужны только бары фронтов: при переходе новый контракт тоже становится фронтом.
+    # Дальние «следующие» в конце периода могут быть ещё пустыми (например, UBH27).
+    bars = load_bars(product, bar_size, set(plan["front"]))
+
+    # 1. Каждый день берём бары фронта.
+    pieces = []
+    for day, front in zip(plan["date"], plan["front"]):
+        front_bars = bars[front]
+        pieces.append(front_bars[front_bars["session_end_date"] == day])
+    series = pd.concat(pieces, ignore_index=True).rename(columns={"ticker": "contract"})
+
+    # 2. На каждом переходе умножаем всё, что было раньше, на его коэффициент.
+    series["factor"] = 1.0
+    for day, ratio in ratios:
+        series.loc[series["session_end_date"] < day, "factor"] *= ratio
 
     for column in PRICES:
         series[column] = (series[column] * series["factor"]).round(6)
@@ -98,7 +113,7 @@ def build_continuous(product: str, bar_size: str, start: str, end: str) -> None:
     columns = ["time", "session_end_date", "contract", *PRICES, "volume", "transactions", "factor"]
     out_path = OUT_DIR / f"{product}_{bar_size}.parquet"
     series[columns].to_parquet(out_path, index=False)
-    print(f"{product} {bar_size}: баров {len(series)}, файл {out_path}\n")
+    print(f"{product} {bar_size}: баров {len(series)}, файл {out_path}")
 
 
 def main() -> None:
@@ -112,9 +127,14 @@ def main() -> None:
 
     config = load_instruments()
     for future in futures_to_process(config, args.member, args.product):
+        product = future["ticker"]
+        plan = pd.read_csv(FUTURES_PLAN_DIR / f"{product}.csv")
+        plan = plan[(plan["date"] >= args.start) & (plan["date"] <= args.end)]
+        print(f"{product}: переходы")
+        ratios = roll_ratios(product, plan)
         for bar_size in FUTURES_BAR_SIZES:
-            print(f"{future['ticker']} {bar_size}:")
-            build_continuous(future["ticker"], bar_size, args.start, args.end)
+            build_continuous(product, bar_size, plan, ratios)
+        print()
 
 
 if __name__ == "__main__":
