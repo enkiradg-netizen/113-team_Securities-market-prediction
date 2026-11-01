@@ -24,19 +24,10 @@
 
 futures:
   currencies:  # 1_валюты-cme_top_tier.md
-    - {ticker: 6E, name: "Euro/U.S. Dollar (EUR/USD) Futures", name_ru: Евро / доллар США, exchange: CME, roll_months: HMUZ}
     - {ticker: 6J, name: "Japanese Yen/U.S. Dollar (JPY/USD) Futures", name_ru: Японская иена / доллар США, exchange: CME, roll_months: HMUZ}
     - {ticker: 6B, name: "British Pound Sterling/U.S. Dollar (GBP/USD) Futures", name_ru: Британский фунт / доллар США, exchange: CME, roll_months: HMUZ}
     - {ticker: 6A, name: "Australian Dollar/U.S. Dollar (AUD/USD) Futures", name_ru: Австралийский доллар / доллар США, exchange: CME, roll_months: HMUZ}
-    - {ticker: 6C, name: "Canadian Dollar/U.S. Dollar (CAD/USD) Futures", name_ru: Канадский доллар / доллар США, exchange: CME, roll_months: HMUZ}
     - {ticker: 6S, name: "Swiss Franc/U.S. Dollar (CHF/USD) Futures", name_ru: Швейцарский франк / доллар США, exchange: CME, roll_months: HMUZ}
-    - {ticker: 6M, name: "Mexican Peso/U.S. Dollar (MXN/USD) Futures", name_ru: Мексиканский песо / доллар США, exchange: CME, roll_months: HMUZ}
-    - {ticker: 6N, name: "New Zealand Dollar/U.S. Dollar (NZD/USD) Futures", name_ru: Новозеландский доллар / доллар США, exchange: CME, roll_months: HMUZ}
-    # Вместо 6H из списка команды: 6H в Massive только с 2026 года.
-    # Котировка обратная: юаней за доллар США.
-    # Листинг ежемесячный, но основная торговля в квартальных контрактах;
-    # месячные лидируют по объёму лишь эпизодически, поэтому берём HMUZ.
-    - {ticker: CNH, name: "U.S. Dollar/Offshore Chinese Renminbi (USD/RMB) Futures", name_ru: Доллар США / офшорный юань, exchange: CME, roll_months: HMUZ}
 
   indices:  # 2_мировые-индексы-cme.md
     - {ticker: ES, name: "E-mini Standard and Poor's 500 Stock Price Index Futures", name_ru: E-mini S&P 500, exchange: CME, roll_months: HMUZ}
@@ -64,17 +55,15 @@ futures:
   agriculture:  # 5_сельхозтовары-cme.md
     # У части продуктов roll_months короче стандартного цикла CME:
     # по данным торговля перескакивает через эти месяцы
-    # (ZC, ZO — без U; ZS — без Q, U; ZM, ZL — без Q, U, V; HE — без K).
+    # (ZC — без U; ZS — без Q, U; ZM, ZL — без Q, U, V; HE — без K).
     - {ticker: ZC, name: "Corn Futures", name_ru: Кукуруза, exchange: CBOT, roll_months: HKNZ}
     - {ticker: ZS, name: "Soybean Futures", name_ru: Соя, exchange: CBOT, roll_months: FHKNX}
     - {ticker: ZW, name: "Wheat Futures", name_ru: Пшеница SRW, exchange: CBOT, roll_months: HKNUZ}
     - {ticker: ZM, name: "Soybean Meal Futures", name_ru: Соевый шрот, exchange: CBOT, roll_months: FHKNZ}
     - {ticker: ZL, name: "Soybean Oil Futures", name_ru: Соевое масло, exchange: CBOT, roll_months: FHKNZ}
-    - {ticker: ZO, name: "Oat Futures", name_ru: Овёс, exchange: CBOT, roll_months: HKNZ}
     - {ticker: LE, name: "Live Cattle Futures", name_ru: Живой крупный рогатый скот, exchange: CME, roll_months: GJMQVZ}
     - {ticker: HE, name: "Lean Hog Futures", name_ru: Свиньи, exchange: CME, roll_months: GJMNQVZ}
     - {ticker: GF, name: "Feeder Cattle Futures", name_ru: Молодой откормочный скот, exchange: CME, roll_months: FHJKQUVX}
-    - {ticker: DC, name: "Class III Milk Futures", name_ru: Молоко Class III, exchange: CME, roll_months: FGHJKMNQUVXZ}
 
   metals:  # 6_металлы-cme.md
     # GC: октябрьский контракт (V) не торгуется как основной, его пропускаем.
@@ -84,9 +73,7 @@ futures:
     - {ticker: PL, name: "Platinum Futures", name_ru: Платина, exchange: NYMEX, roll_months: FJNV}
     - {ticker: PA, name: "Palladium Futures", name_ru: Палладий, exchange: NYMEX, roll_months: HMUZ}
 
-  crypto:  # 7_криптовалюты-cme.md
-    - {ticker: BTC, name: "Bitcoin Futures", name_ru: Биткоин, exchange: CME, roll_months: FGHJKMNQUVXZ}
-    - {ticker: ETH, name: "Ether Futures", name_ru: Эфир, exchange: CME, roll_months: FGHJKMNQUVXZ}
+  # crypto (7_криптовалюты-cme.md) исключена целиком: BTC и ETH — в excluded.
 
 # Тикеры акций и фьючерсов могут совпадать (CL — нефть WTI и Colgate-Palmolive),
 # поэтому инструмент определяется по паре «класс актива + тикер».
@@ -244,7 +231,7 @@ team:
     futures: [currencies, agriculture]
     stocks: [information_technology, energy, real_estate]
   sasha:
-    futures: [bonds, crypto]
+    futures: [bonds]  # crypto исключена, см. excluded
     stocks: [communication_services, financials, utilities]
   iura:
     futures: [energy]
@@ -259,9 +246,20 @@ excluded:
     - {ticker: E3G, reason: "сделки только в 17 днях из ~250 за 2023 год"}
     - {ticker: IBV, reason: "сделки только в 74 днях из ~250 за 2023 год"}
     - {ticker: TTF, reason: "~68 сделок в день на все контракты за 2023 год; основной рынок TTF — ICE Endex"}
+    - {ticker: ZO, reason: "~330 сделок в день, медианный объём фронта 326 контрактов (2021–2026)"}
+    - {ticker: DC, reason: "~730 сделок в день, медианный объём фронта 522 контракта (2021–2026)"}
+    - {ticker: CNH, reason: "~490 сделок в день, медианный объём фронта 913 контрактов (2021–2026); взят вместо 6H"}
 
     # С неполной историей в Massive.
-    - {ticker: 6H, reason: "в Massive с 06.02.2026, взят CNH"}
+    - {ticker: 6H, reason: "в Massive с 06.02.2026"}
+    # Контракты в справочнике Massive есть, а баров и сделок за эти даты нет
+    # (проверено 01.11.2026 по дневным барам и сделкам).
+    - {ticker: 6E, reason: "нет данных до 31.10.2022"}
+    - {ticker: 6C, reason: "нет данных до 31.10.2022"}
+    - {ticker: 6M, reason: "нет данных до 31.10.2022"}
+    - {ticker: 6N, reason: "нет данных до 31.10.2022"}
+    - {ticker: BTC, reason: "нет данных после 31.12.2024"}
+    - {ticker: ETH, reason: "нет данных после 31.12.2024"}
     - {ticker: TTP, reason: "в Massive только в 2026 году; замена TTF тоже исключена"}
     - {ticker: TWE, reason: "в Massive с 13.02.2022"}
     - {ticker: LBR, reason: "в Massive с 24.07.2022"}
