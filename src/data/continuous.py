@@ -1,24 +1,30 @@
 """
-Склейка фьючерса в один непрерывный ряд (back-adjust, «панамский» метод).
+Склейка фьючерса в один непрерывный ряд (ratio back-adjust).
 
 Каждый день берём бары фронта из плана контрактов. При переходе
 на новый контракт цены прыгают: новый контракт обычно стоит иначе,
 чем старый (например, CLF2 дешевле CLZ1 примерно на доллар).
 Это не настоящее движение рынка, а разница между контрактами.
 
-Чтобы убрать прыжок, в момент перехода считаем разрыв:
-    разрыв = цена нового контракта − цена старого
-на последнем баре перед переходом, где торговались оба. Затем сдвигаем
-всю историю ДО перехода на этот разрыв. Последний контракт остаётся
+Чтобы убрать прыжок, в момент перехода считаем коэффициент:
+    коэффициент = цена нового контракта / цена старого
+на последнем баре перед переходом, где торговались оба. Затем умножаем
+всю историю ДО перехода на этот коэффициент. Последний контракт остаётся
 с настоящими ценами, а прошлое подстраивается под него.
+
+Почему умножаем, а не прибавляем разницу: при сдвиге на разницу
+(«панамский» метод) за 5 лет разрывы копятся, и старые цены Brent,
+бензина и дизеля уходили ниже нуля. При умножении цены всегда
+положительные, а процентные изменения (доходности) не меняются.
 
 Запуск (из корня проекта, после download_bars):
     python -m src.data.continuous --product CL
     python -m src.data.continuous --product CL --start 2021-11-15 --end 2022-01-31
 
-Результат: data/processed/futures_continuous/<код>_<таймфрейм>.csv
+Результат: data/processed/futures_continuous/<код>_<таймфрейм>.parquet
     time, session_end_date, contract, open, high, low, close, volume,
-    transactions, adjustment (на сколько сдвинуты цены этого бара)
+    transactions, factor (на сколько умножены цены этого бара;
+    настоящая цена контракта = цена / factor)
 """
 
 import argparse
@@ -38,12 +44,12 @@ def load_bars(product: str, bar_size: str, tickers: set) -> dict:
     return {ticker: pd.read_csv(BARS_DIR / bar_size / product / f"{ticker}.csv") for ticker in tickers}
 
 
-def roll_gap(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | None:
+def roll_ratio(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | None:
     """
-    Разрыв цен при переходе со старого контракта на новый.
+    Коэффициент при переходе со старого контракта на новый.
 
     Берём последний бар до дня перехода, где есть оба контракта,
-    и считаем close нового минус close старого.
+    и делим close нового на close старого.
 
     Бар определяем по паре «начало бара + торговый день»: у 4-часовых
     баров Massive бар 20:00–24:00 UTC делится на два с одинаковым
@@ -55,7 +61,7 @@ def roll_gap(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | Non
     if both.empty:
         return None
     last = both.iloc[-1]
-    return last["new"] - last["old"]
+    return last["new"] / last["old"]
 
 
 def build_continuous(product: str, bar_size: str, start: str, end: str) -> None:
@@ -70,33 +76,33 @@ def build_continuous(product: str, bar_size: str, start: str, end: str) -> None:
         front_bars = bars[front]
         pieces.append(front_bars[front_bars["session_end_date"] == day])
     series = pd.concat(pieces, ignore_index=True).rename(columns={"ticker": "contract"})
-    series["adjustment"] = 0.0
+    series["factor"] = 1.0
 
-    # 2. На каждом переходе считаем разрыв и сдвигаем всё, что было раньше.
+    # 2. На каждом переходе считаем коэффициент и умножаем на него всё, что было раньше.
     rolls = plan[plan["front"] != plan["front"].shift()].iloc[1:]
     previous = plan["front"].shift()
     for index, row in rolls.iterrows():
         old, new, day = previous[index], row["front"], row["date"]
-        gap = roll_gap(bars[old], bars[new], day)
-        if gap is None:
-            print(f"  {day} {old} → {new}: нет общего бара, разрыв не посчитан (сдвиг 0)")
+        ratio = roll_ratio(bars[old], bars[new], day)
+        if ratio is None:
+            print(f"  {day} {old} → {new}: нет общего бара, коэффициент не посчитан (оставляем 1)")
             continue
-        series.loc[series["session_end_date"] < day, "adjustment"] += gap
-        print(f"  {day} {old} → {new}: разрыв {gap:+.2f}")
+        series.loc[series["session_end_date"] < day, "factor"] *= ratio
+        print(f"  {day} {old} → {new}: коэффициент {ratio:.4f}")
 
     for column in PRICES:
-        series[column] = (series[column] + series["adjustment"]).round(6)
+        series[column] = (series[column] * series["factor"]).round(6)
     series["time"] = pd.to_datetime(series["window_start"], unit="ns", utc=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    columns = ["time", "session_end_date", "contract", *PRICES, "volume", "transactions", "adjustment"]
-    out_path = OUT_DIR / f"{product}_{bar_size}.csv"
-    series[columns].to_csv(out_path, index=False)
+    columns = ["time", "session_end_date", "contract", *PRICES, "volume", "transactions", "factor"]
+    out_path = OUT_DIR / f"{product}_{bar_size}.parquet"
+    series[columns].to_parquet(out_path, index=False)
     print(f"{product} {bar_size}: баров {len(series)}, файл {out_path}\n")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Склейка фьючерса в непрерывный ряд (back-adjust).")
+    parser = argparse.ArgumentParser(description="Склейка фьючерса в непрерывный ряд (ratio back-adjust).")
     who = parser.add_mutually_exclusive_group(required=True)
     who.add_argument("--member", help="имя участника из config/instruments.yaml, например iura")
     who.add_argument("--product", nargs="+", help="коды фьючерсов, например CL NG")
