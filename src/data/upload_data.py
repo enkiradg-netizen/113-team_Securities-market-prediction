@@ -1,7 +1,16 @@
 """
 Выгрузка данных проекта на общий сетевой диск (Hetzner Storage Box).
 
-Копирует папку data/ проекта на диск в папку data/ с той же структурой.
+Делает две копии:
+    data/ проекта  → data/ на диске — рабочие данные для команды;
+    data/raw/      → backup/raw/ на диске — страховка. Сюда у команды
+                     доступа нет: её логин видит только папку data.
+Страховка нужна для сырых данных: когда закончится подписка Massive,
+заново их не скачать. Планы и склейку можно пересчитать скриптами.
+
+Команда может менять файлы в data/ на диске, а своё кладёт в data/team/.
+Эту папку скрипт не трогает (у нас локально её нет).
+
 Копирует программа rsync: уже выгруженные файлы повторно не передаются,
 а после обрыва выгрузка продолжается с того же места.
 
@@ -23,6 +32,7 @@
 
 import argparse
 import subprocess
+from pathlib import Path
 
 from dotenv import dotenv_values
 
@@ -39,19 +49,21 @@ def get_storage_box() -> str:
     return box
 
 
-def upload(box: str, dry_run: bool) -> None:
+def upload(box: str, local_dir: Path, remote_dir: str, dry_run: bool) -> None:
     """
-    Запускает rsync: data/ проекта → data/ на диске.
+    Запускает rsync: папка проекта → папка на диске.
 
     -a — копировать с подпапками, сохраняя время изменения файлов;
     --partial — недокачанный файл не выбрасывать, а докачать в следующий раз;
     --exclude *.tmp — не выгружать временные файлы, которые ещё пишутся;
+    --mkpath — создать папку на диске, если её ещё нет;
     -e "ssh -p 23" — Storage Box принимает rsync на порту 23.
     """
+    print(f"{local_dir} → {remote_dir}")
     command = [
-        "rsync", "-a", "--partial", "--exclude", "*.tmp",
+        "rsync", "-a", "--partial", "--mkpath", "--exclude", "*.tmp",
         "--info=stats1,progress2", "-e", "ssh -p 23",
-        f"{DATA_DIR}/", f"{box}:data/",
+        f"{local_dir}/", f"{box}:{remote_dir}/",
     ]
     if dry_run:
         command.insert(1, "--dry-run")
@@ -63,7 +75,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Выгрузка data/ на общий сетевой диск.")
     parser.add_argument("--dry-run", action="store_true", help="только показать, что будет выгружено")
     args = parser.parse_args()
-    upload(get_storage_box(), args.dry_run)
+    box = get_storage_box()
+    upload(box, DATA_DIR, "data", args.dry_run)
+    upload(box, DATA_DIR / "raw", "backup/raw", args.dry_run)
 
 
 if __name__ == "__main__":
