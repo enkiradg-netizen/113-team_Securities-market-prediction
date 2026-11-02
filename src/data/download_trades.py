@@ -25,8 +25,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from src.data.massive_api import get_api_key, massive_get_all
-from src.data.project_config import (END, FUTURES_PLAN_DIR, RAW_DIR, START,
-                                     futures_to_process, load_instruments)
+from src.data.project_config import (END, RAW_DIR, START, futures_to_process,
+                                     load_instruments, load_plan)
 
 TRADES_DIR = RAW_DIR / "futures" / "trades"
 
@@ -105,7 +105,7 @@ def add_to_file(out_file, tmp_file, trades: pd.DataFrame) -> None:
 
 def download_trades(product: str, start_month: str, end_month: str, api_key: str) -> None:
     """Качает сделки всех контрактов из плана одного фьючерса, по месяцам."""
-    plan = pd.read_csv(FUTURES_PLAN_DIR / f"{product}.csv")
+    plan = load_plan(product)
     plan = plan[(plan["date"].str[:7] >= start_month) & (plan["date"].str[:7] <= end_month)]
     months = contract_months(plan)
     print(f"{product}: файлов (контракт + месяц) — {len(months)}")

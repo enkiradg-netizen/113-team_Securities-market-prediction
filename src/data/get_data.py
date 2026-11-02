@@ -20,10 +20,9 @@ data/ проекта с той же структурой, где их ждут �
 """
 
 import argparse
-import subprocess
 
 from src.data.project_config import PROJECT_DIR
-from src.data.upload_data import DATA_DIR, get_storage_box
+from src.data.upload_data import DATA_DIR, get_storage_box, run_rsync
 
 
 def download(box: str, part: str) -> None:
@@ -48,7 +47,7 @@ def download(box: str, part: str) -> None:
         "rsync", "-a", "--partial", "--info=stats1,progress2", "-e", "ssh -p 23",
         f"{box}:{remote_dir}", f"{local_dir}/",
     ]
-    subprocess.run(command, check=True)
+    run_rsync(command)
     print(f"Готово: {local_dir.relative_to(PROJECT_DIR)}")
 
 

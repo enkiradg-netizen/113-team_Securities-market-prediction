@@ -8,6 +8,7 @@
 from datetime import date
 from pathlib import Path
 
+import pandas as pd
 import pandas_market_calendars as mcal
 import yaml
 
@@ -47,9 +48,22 @@ def futures_to_process(config: dict, member: str | None, products: list | None) 
     """
     all_futures = {item["ticker"]: item for group in config["futures"].values() for item in group}
     if products:
+        unknown = [code for code in products if code not in all_futures]
+        if unknown:
+            raise SystemExit(f"Нет таких фьючерсов: {', '.join(unknown)}. Есть: {', '.join(all_futures)}")
         return [all_futures[code] for code in products]
+    if member not in config["team"]:
+        raise SystemExit(f"Нет участника {member}. Есть: {', '.join(config['team'])}")
     groups = config["team"][member]["futures"]
     return [item for group in groups for item in config["futures"][group]]
+
+
+def load_plan(product: str) -> pd.DataFrame:
+    """Читает план контрактов одного фьючерса."""
+    path = FUTURES_PLAN_DIR / f"{product}.csv"
+    if not path.exists():
+        raise SystemExit(f"Нет плана {path.name}. Сначала запустите: python -m src.data.contract_plan --product {product}")
+    return pd.read_csv(path)
 
 
 def trading_days(calendar: str) -> list:

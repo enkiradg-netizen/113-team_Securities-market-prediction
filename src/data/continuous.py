@@ -21,7 +21,6 @@
 
 Запуск (из корня проекта, после download_bars):
     python -m src.data.continuous --product CL
-    python -m src.data.continuous --product CL --start 2021-11-15 --end 2022-01-31
 
 Результат: data/processed/futures_continuous/<код>_<таймфрейм>.parquet
     time, session_end_date, contract, open, high, low, close, volume,
@@ -35,8 +34,8 @@ import argparse
 
 import pandas as pd
 
-from src.data.project_config import (END, FUTURES_BAR_SIZES, FUTURES_PLAN_DIR, PROCESSED_DIR, RAW_DIR,
-                                     START, futures_to_process, load_instruments)
+from src.data.project_config import (FUTURES_BAR_SIZES, PROCESSED_DIR, RAW_DIR, futures_to_process,
+                                     load_instruments, load_plan)
 
 BARS_DIR = RAW_DIR / "futures" / "bars"
 OUT_DIR = PROCESSED_DIR / "futures_continuous"
@@ -46,7 +45,13 @@ RATIO_BAR_SIZE = "1hour"  # по этим барам считаем коэффи
 
 def load_bars(product: str, bar_size: str, tickers: set) -> dict:
     """Читает скачанные бары контрактов. Возвращает {контракт: таблица баров}."""
-    return {ticker: pd.read_csv(BARS_DIR / bar_size / product / f"{ticker}.csv") for ticker in tickers}
+    bars = {}
+    for ticker in tickers:
+        path = BARS_DIR / bar_size / product / f"{ticker}.csv"
+        if not path.exists():
+            raise SystemExit(f"Нет баров {path}. Сначала запустите: python -m src.data.download_bars --product {product}")
+        bars[ticker] = pd.read_csv(path)
+    return bars
 
 
 def roll_ratio(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | None:
@@ -123,15 +128,12 @@ def main() -> None:
     who = parser.add_mutually_exclusive_group(required=True)
     who.add_argument("--member", help="имя участника из config/instruments.yaml, например iura")
     who.add_argument("--product", nargs="+", help="коды фьючерсов, например CL NG")
-    parser.add_argument("--start", default=START.isoformat(), help="с какой даты (для тестов), ГГГГ-ММ-ДД")
-    parser.add_argument("--end", default=END.isoformat(), help="по какую дату (для тестов), ГГГГ-ММ-ДД")
     args = parser.parse_args()
 
     config = load_instruments()
     for future in futures_to_process(config, args.member, args.product):
         product = future["ticker"]
-        plan = pd.read_csv(FUTURES_PLAN_DIR / f"{product}.csv")
-        plan = plan[(plan["date"] >= args.start) & (plan["date"] <= args.end)]
+        plan = load_plan(product)
         print(f"{product}: переходы")
         ratios = roll_ratios(product, plan)
         for bar_size in FUTURES_BAR_SIZES:
