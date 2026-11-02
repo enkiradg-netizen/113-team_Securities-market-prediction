@@ -179,7 +179,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = load_instruments()
-    api_key = get_api_key()
+    api_key = get_api_key("futures")
     for future in futures_to_process(config, args.member, args.product):
         build_plan(future, api_key)
 
