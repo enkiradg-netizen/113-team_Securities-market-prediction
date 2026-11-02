@@ -27,6 +27,8 @@
     time, session_end_date, contract, open, high, low, close, volume,
     transactions, factor (на сколько умножены цены этого бара;
     настоящая цена контракта = цена / factor)
+Время бара может повторяться: бар на границе двух торговых дней делится
+на два с одним началом. Строку однозначно задаёт пара time + session_end_date.
 """
 
 import argparse
@@ -54,9 +56,9 @@ def roll_ratio(old: pd.DataFrame, new: pd.DataFrame, roll_day: str) -> float | N
     Берём последний бар до дня перехода, где есть оба контракта,
     и делим close нового на close старого.
 
-    Бар определяем по паре «начало бара + торговый день»: у 4-часовых
-    баров Massive бар 20:00–24:00 UTC делится на два с одинаковым
-    началом — конец одной сессии и начало следующей.
+    Бар определяем по паре «начало бара + торговый день»: бар на границе
+    сессий Massive делит на два с одинаковым началом — конец одной сессии
+    и начало следующей. У часовых баров это редкость (ES, 30.01.2025).
     """
     key = ["window_start", "session_end_date"]
     before = lambda bars: bars[bars["session_end_date"] < roll_day].set_index(key)["close"]
