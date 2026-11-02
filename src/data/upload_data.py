@@ -31,6 +31,7 @@
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -50,12 +51,31 @@ def get_storage_box() -> str:
     return box
 
 
+def ssh_command() -> str:
+    """
+    Как подключаться к диску: по паролю или по файлу-ключу.
+
+    Если в .env есть STORAGE_BOX_KEY — путь к файлу-ключу, пароль не спрашивается.
+    Storage Box принимает подключение на порту 23.
+    """
+    key = dotenv_values(PROJECT_DIR / ".env").get("STORAGE_BOX_KEY")
+    if not key:
+        return "ssh -p 23"
+    key_file = Path(key).expanduser()
+    if not key_file.is_file():
+        raise SystemExit(f"Нет файла-ключа {key_file}. Проверьте STORAGE_BOX_KEY в .env.")
+    # На Windows права файлов устроены иначе, там эта проверка не нужна.
+    if os.name != "nt" and key_file.stat().st_mode & 0o077:
+        raise SystemExit(f"У файла-ключа слишком широкие права, ssh его не примет. Выполните: chmod 600 {key_file}")
+    return f'ssh -p 23 -i "{key_file}" -o IdentitiesOnly=yes'
+
+
 def run_rsync(command: list) -> None:
     """Запускает rsync и понятно сообщает, если что-то пошло не так."""
     if shutil.which("rsync") is None:
         raise SystemExit("Нет программы rsync. Linux: sudo apt install rsync. На Windows данные можно скачать через WinSCP (см. README).")
     if subprocess.run(command).returncode != 0:
-        raise SystemExit("rsync завершился с ошибкой. Проверьте логин в .env, пароль и интернет и запустите ту же команду ещё раз.")
+        raise SystemExit("rsync завершился с ошибкой. Проверьте логин в .env, пароль или файл-ключ и интернет, потом запустите ту же команду ещё раз.")
 
 
 def upload(box: str, local_dir: Path, remote_dir: str, dry_run: bool) -> None:
@@ -66,12 +86,12 @@ def upload(box: str, local_dir: Path, remote_dir: str, dry_run: bool) -> None:
     --partial — недокачанный файл не выбрасывать, а докачать в следующий раз;
     --exclude *.tmp — не выгружать временные файлы, которые ещё пишутся;
     --mkpath — создать папку на диске, если её ещё нет;
-    -e "ssh -p 23" — Storage Box принимает rsync на порту 23.
+    -e — как подключаться к диску (см. ssh_command).
     """
     print(f"{local_dir} → {remote_dir}")
     command = [
         "rsync", "-a", "--partial", "--mkpath", "--exclude", "*.tmp",
-        "--info=stats1,progress2", "-e", "ssh -p 23",
+        "--info=stats1,progress2", "-e", ssh_command(),
         f"{local_dir}/", f"{box}:{remote_dir}/",
     ]
     if dry_run:

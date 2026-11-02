@@ -11,18 +11,48 @@ data/ проекта с той же структурой, где их ждут �
 Нужно:
     - программа rsync (Linux: sudo apt install rsync, Mac: есть сразу);
     - в .env строка STORAGE_BOX=логин@адрес (шаблон в .env.example);
-    - пароль от диска — скрипт спросит его при запуске.
+    - пароль от диска (скрипт спросит его при запуске) или файл-ключ:
+      путь к нему в .env, строка STORAGE_BOX_KEY.
 
 Запуск (из корня проекта):
     python -m src.data.get_data                     # всё
     python -m src.data.get_data processed           # только склеенные ряды
     python -m src.data.get_data raw/futures/bars    # только бары
+
+Чтобы получить данные только своих инструментов, удобнее команда
+python -m src.data.pipeline: она спросит, что нужно, и возьмёт только эти файлы.
 """
 
 import argparse
 
 from src.data.project_config import PROJECT_DIR
-from src.data.upload_data import DATA_DIR, get_storage_box, run_rsync
+from src.data.upload_data import DATA_DIR, get_storage_box, run_rsync, ssh_command
+
+
+def remote_prefix(box: str) -> str:
+    """
+    Субаккаунт команды (логин вида uXXXXXX-subX) видит только папку data,
+    поэтому путь на диске у него начинается сразу с raw/, interim/ или
+    processed/. Главный аккаунт видит весь диск, ему нужна приставка data/.
+    """
+    login = box.split("@")[0]
+    return "" if "-sub" in login else "data/"
+
+
+def download_matching(box: str, patterns: list) -> None:
+    """
+    Скачивает с диска только файлы, подходящие под шаблоны, например /processed/stocks/NVDA_*.
+
+    --include и --exclude оставляют только нужные файлы, а -m не создаёт пустые папки.
+    """
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    filters = ["--include=*/", *[f"--include={pattern}" for pattern in patterns], "--exclude=*"]
+    command = [
+        "rsync", "-a", "-m", "--partial", "--info=stats1,progress2", "-e", ssh_command(), *filters,
+        f"{box}:{remote_prefix(box)}./", f"{DATA_DIR}/",
+    ]
+    run_rsync(command)
+    print(f"Готово: {DATA_DIR.relative_to(PROJECT_DIR)}")
 
 
 def download(box: str, part: str) -> None:
@@ -31,20 +61,16 @@ def download(box: str, part: str) -> None:
 
     -a — копировать с подпапками, сохраняя время изменения файлов;
     --partial — недокачанный файл не выбрасывать, а докачать в следующий раз;
-    -e "ssh -p 23" — Storage Box принимает rsync на порту 23.
-
-    Субаккаунт команды (логин вида uXXXXXX-subX) видит только папку data,
-    поэтому путь на диске у него начинается сразу с raw/, interim/ или
-    processed/. Главный аккаунт видит весь диск, ему нужна приставка data/.
+    --exclude .ssh — не скачивать файл с ключами доступа: он лежит прямо в папке данных;
+    -e — как подключаться к диску (см. ssh_command).
     """
     part = part.strip("/")
     local_dir = DATA_DIR / part if part else DATA_DIR
     local_dir.mkdir(parents=True, exist_ok=True)
-    login = box.split("@")[0]
-    prefix = "" if "-sub" in login else "data/"
+    prefix = remote_prefix(box)
     remote_dir = f"{prefix}{part}/" if part else f"{prefix}./"
     command = [
-        "rsync", "-a", "--partial", "--info=stats1,progress2", "-e", "ssh -p 23",
+        "rsync", "-a", "--partial", "--exclude", ".ssh", "--info=stats1,progress2", "-e", ssh_command(),
         f"{box}:{remote_dir}", f"{local_dir}/",
     ]
     run_rsync(command)
