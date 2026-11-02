@@ -96,6 +96,18 @@
 
 *Результат: готовый аналитический сервис для прогнозирования рынка фьючерсов США*
 
+## Установка:
+Нужен Python 3.10 или новее (проверено на 3.12). Из папки, куда хотите положить проект:
+```bash
+git clone https://github.com/enkiradg-netizen/113-team_Securities-market-prediction.git
+cd 113-team_Securities-market-prediction
+python3 -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env           # Windows: copy .env.example .env
+```
+Все команды ниже запускаются из корня проекта с активированным `.venv`.
+
 ## Данные:
 Готовые данные лежат на общем сетевом диске. Качать их из Massive заново не нужно. Логин и пароль выдаёт владелец диска.
 

@@ -9,7 +9,6 @@
 Запуск (из корня проекта):
     python -m src.data.download_bars --product CL
     python -m src.data.download_bars --member iura
-    python -m src.data.download_bars --product CL --start 2021-11-15 --end 2022-01-31
 
 Результат: data/raw/futures/bars/<таймфрейм>/<код>/<контракт>.csv
 """
@@ -20,8 +19,8 @@ from datetime import timedelta
 import pandas as pd
 
 from src.data.massive_api import get_api_key, massive_get_all
-from src.data.project_config import (END, FUTURES_BAR_SIZES, FUTURES_PLAN_DIR, RAW_DIR, START,
-                                     futures_to_process, load_instruments)
+from src.data.project_config import (FUTURES_BAR_SIZES, RAW_DIR, futures_to_process,
+                                     load_instruments, load_plan)
 
 BARS_DIR = RAW_DIR / "futures" / "bars"
 
@@ -64,11 +63,9 @@ def download_contract_bars(ticker: str, bar_size: str, first_day: str, last_day:
     return bars[in_period]
 
 
-def download_bars(product: str, start: str, end: str, api_key: str) -> None:
+def download_bars(product: str, api_key: str) -> None:
     """Качает бары всех таймфреймов для контрактов из плана одного фьючерса."""
-    plan = pd.read_csv(FUTURES_PLAN_DIR / f"{product}.csv")
-    plan = plan[(plan["date"] >= start) & (plan["date"] <= end)]
-    periods = contract_periods(plan)
+    periods = contract_periods(load_plan(product))
     print(f"{product}: контрактов для загрузки — {len(periods)}")
 
     for bar_size in FUTURES_BAR_SIZES:
@@ -85,14 +82,12 @@ def main() -> None:
     who = parser.add_mutually_exclusive_group(required=True)
     who.add_argument("--member", help="имя участника из config/instruments.yaml, например iura")
     who.add_argument("--product", nargs="+", help="коды фьючерсов, например CL NG")
-    parser.add_argument("--start", default=START.isoformat(), help="с какой даты (для тестов), ГГГГ-ММ-ДД")
-    parser.add_argument("--end", default=END.isoformat(), help="по какую дату (для тестов), ГГГГ-ММ-ДД")
     args = parser.parse_args()
 
     config = load_instruments()
     api_key = get_api_key("futures")
     for future in futures_to_process(config, args.member, args.product):
-        download_bars(future["ticker"], args.start, args.end, api_key)
+        download_bars(future["ticker"], api_key)
 
 
 if __name__ == "__main__":

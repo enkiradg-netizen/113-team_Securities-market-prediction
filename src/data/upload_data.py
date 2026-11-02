@@ -31,6 +31,7 @@
 """
 
 import argparse
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -45,8 +46,16 @@ def get_storage_box() -> str:
     """Берёт адрес диска (логин@адрес) из файла .env."""
     box = dotenv_values(PROJECT_DIR / ".env").get("STORAGE_BOX")
     if not box:
-        raise ValueError("В .env нет STORAGE_BOX. Пример строки — в .env.example.")
+        raise SystemExit("В .env нет STORAGE_BOX. Пример строки — в .env.example.")
     return box
+
+
+def run_rsync(command: list) -> None:
+    """Запускает rsync и понятно сообщает, если что-то пошло не так."""
+    if shutil.which("rsync") is None:
+        raise SystemExit("Нет программы rsync. Linux: sudo apt install rsync. На Windows данные можно скачать через WinSCP (см. README).")
+    if subprocess.run(command).returncode != 0:
+        raise SystemExit("rsync завершился с ошибкой. Проверьте логин в .env, пароль и интернет и запустите ту же команду ещё раз.")
 
 
 def upload(box: str, local_dir: Path, remote_dir: str, dry_run: bool) -> None:
@@ -68,7 +77,7 @@ def upload(box: str, local_dir: Path, remote_dir: str, dry_run: bool) -> None:
     if dry_run:
         command.insert(1, "--dry-run")
         command.insert(2, "--itemize-changes")
-    subprocess.run(command, check=True)
+    run_rsync(command)
 
 
 def main() -> None:

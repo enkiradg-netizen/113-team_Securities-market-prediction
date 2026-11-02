@@ -28,7 +28,7 @@ def get_api_key(asset: str) -> str:
     name = f"MASSIVE_API_KEY_{asset.upper()}"
     key = dotenv_values(PROJECT_DIR / ".env").get(name)
     if not key:
-        raise ValueError(f"В .env нет {name}. Шаблон ключей — в .env.example.")
+        raise SystemExit(f"В .env нет {name}. Шаблон ключей — в .env.example.")
     return key
 
 
@@ -42,6 +42,9 @@ def get_page(url: str, params: dict | None, headers: dict) -> dict:
     for attempt in range(1, MAX_TRIES + 1):
         try:
             response = requests.get(url, params=params, headers=headers, timeout=120)
+            if response.status_code in (401, 403):
+                raise SystemExit(f"Massive отклонил ключ (код ответа {response.status_code}). "
+                                 "Проверьте ключ в файле .env и подписку.")
             if response.status_code not in RETRY_STATUSES:
                 response.raise_for_status()
                 return response.json()
@@ -51,7 +54,7 @@ def get_page(url: str, params: dict | None, headers: dict) -> dict:
         print(f"    Massive: {problem}, попытка {attempt} из {MAX_TRIES}")
         if attempt < MAX_TRIES:
             time.sleep(RETRY_PAUSE)
-    raise RuntimeError(f"Massive не отвечает ({problem}). Запустите ту же команду ещё раз чуть позже.")
+    raise SystemExit(f"Massive не отвечает ({problem}). Запустите ту же команду ещё раз чуть позже.")
 
 
 def massive_get_all(path: str, params: dict, api_key: str) -> list:
