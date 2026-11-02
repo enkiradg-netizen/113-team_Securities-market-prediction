@@ -1,0 +1,58 @@
+"""
+Общие настройки проекта: период, пути, конфиг инструментов, торговые дни.
+
+Этот модуль импортируют все скрипты сбора данных, чтобы период
+и пути были заданы в одном месте.
+"""
+
+from datetime import date
+from pathlib import Path
+
+import pandas_market_calendars as mcal
+import yaml
+
+# Период проекта.
+START = date(2021, 11, 15)
+END = date(2026, 9, 30)
+
+# Корень проекта и папки с данными (data/ в git не попадает).
+PROJECT_DIR = Path(__file__).resolve().parents[2]
+RAW_DIR = PROJECT_DIR / "data" / "raw"              # данные как пришли из Massive
+INTERIM_DIR = PROJECT_DIR / "data" / "interim"      # промежуточные: план контрактов
+PROCESSED_DIR = PROJECT_DIR / "data" / "processed"  # готовые: склеенные ряды
+
+# Календарь торговых дней CME. Это торговые даты биржи: в праздники
+# США (например, День благодарения) отдельного торгового дня нет.
+FUTURES_CALENDAR = "CME_TradeDate"
+
+# Таймфреймы баров для фьючерсов (так их называет Massive).
+FUTURES_BAR_SIZES = ["15min", "1hour", "4hour"]
+
+# Папка с планом контрактов (его строит contract_plan.py).
+FUTURES_PLAN_DIR = INTERIM_DIR / "futures_plan"
+
+
+def load_instruments() -> dict:
+    """Читает общий конфиг инструментов config/instruments.yaml."""
+    path = PROJECT_DIR / "config" / "instruments.yaml"
+    with path.open(encoding="utf-8") as file:
+        return yaml.safe_load(file)
+
+
+def futures_to_process(config: dict, member: str | None, products: list | None) -> list:
+    """
+    Возвращает фьючерсы из конфига, которые нужно обработать.
+
+    Либо все группы участника (--member), либо перечисленные коды (--product).
+    """
+    all_futures = {item["ticker"]: item for group in config["futures"].values() for item in group}
+    if products:
+        return [all_futures[code] for code in products]
+    groups = config["team"][member]["futures"]
+    return [item for group in groups for item in config["futures"][group]]
+
+
+def trading_days(calendar: str) -> list:
+    """Торговые дни биржи за период проекта (без выходных и праздников) в виде строк 'ГГГГ-ММ-ДД'."""
+    days = mcal.get_calendar(calendar).valid_days(START, END)
+    return [day.strftime("%Y-%m-%d") for day in days]

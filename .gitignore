@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 
 # Данные и локальная база
-data/
+/data/
 *.db
 *.sqlite
 *.sqlite3
