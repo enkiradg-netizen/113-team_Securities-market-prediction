@@ -8,7 +8,7 @@
 Как строим план:
 1. Берём из конфига торгуемые месяцы фьючерса (roll_months) и составляем
    цепочку контрактов по порядку: CLZ1, CLF2, CLG2, ...
-2. Скачиваем дневной объём каждого контракта цепочки.
+2. Считаем дневной объём каждого контракта цепочки: сумма его часовых баров.
 3. Идём по торговым дням биржи: фронт — текущий контракт цепочки,
    следующий — тот, что за ним. Когда следующий наторговал больше фронта
    CONFIRM_DAYS дней подряд, переходим на него. Если фронт закончил торговаться,
@@ -66,24 +66,35 @@ def make_chain(product: str, roll_months: str) -> list:
 
 def get_daily_volumes(ticker: str, api_key: str) -> dict:
     """
-    Скачивает дневной объём торгов одного контракта за наш период.
+    Считает дневной объём торгов одного контракта за наш период.
 
-    Берём дневные бары (resolution=1session). Торговый день фьючерса
-    начинается накануне вечером, поэтому день определяем по session_end_date.
+    Берём часовые бары и складываем их по торговому дню (session_end_date).
+    Дневным барам Massive (resolution=1session) верить нельзя: за часть дней
+    их нет, хотя торги шли (BZ 16.02.2022), а у зерновых дневной бар иногда
+    включает ещё и предыдущий день (см. README).
+
+    Торговый день начинается накануне вечером, поэтому начинаем запрос на день
+    раньше. Заканчиваем в начале дня после конца периода (не включая его):
+    дата в запросе означает полночь UTC, а сессия идёт до вечера.
     Возвращает словарь {дата: объём}.
     """
     bars = massive_get_all(
         f"/futures/v1/aggs/{ticker}",
         {
-            "resolution": "1session",
+            "resolution": "1hour",
             "window_start.gte": (START - timedelta(days=1)).isoformat(),
-            "window_start.lte": END.isoformat(),
+            "window_start.lt": (END + timedelta(days=1)).isoformat(),
+            "sort": "window_start.asc",
             "limit": 50000,
         },
         api_key,
     )
-    return {bar["session_end_date"]: bar["volume"] for bar in bars
-            if START.isoformat() <= bar["session_end_date"] <= END.isoformat()}
+    volumes = {}
+    for bar in bars:
+        day = bar["session_end_date"]
+        if START.isoformat() <= day <= END.isoformat():
+            volumes[day] = volumes.get(day, 0) + bar["volume"]
+    return volumes
 
 
 def make_plan(chain: list, volumes: dict, days: list) -> pd.DataFrame:
@@ -108,15 +119,13 @@ def make_plan(chain: list, volumes: dict, days: list) -> pd.DataFrame:
     for day in days:
         front_volume = volume(chain[i], day)
         next_volume = volume(chain[i + 1], day)
-        # Если у Massive за этот день просто нет данных по фронту
-        # (такие дыры бывают, например CLK2 23.03.2022), день не считаем,
-        # иначе получился бы ложный переход. Исключения:
+        # Если у Massive за этот день просто нет данных по фронту,
+        # день не считаем, иначе получился бы ложный переход. Исключения:
         # - фронт уже закончил торговаться — тогда переходим сразу;
         # - следующий уже обгонял фронт накануне и сегодня торгуется —
         #   значит, фронт просто перестал торговаться (у Z3NM3 с 01.06.2023
         #   сделок нет совсем, все ушли в Z3NU3), и день засчитываем как
-        #   продолжение обгона. Если данных нет у обоих (ES 18.03.2025),
-        #   это дыра Massive, и день пропускаем.
+        #   продолжение обгона. Если данных нет у обоих, день пропускаем.
         front_finished = day > last_day[chain[i]]
         if front_volume > 0 or front_finished or (days_ahead > 0 and next_volume > 0):
             days_ahead = days_ahead + 1 if next_volume > front_volume else 0
@@ -159,7 +168,7 @@ def build_plan(future: dict, api_key: str) -> None:
         volumes[ticker] = by_day
 
     # Дни плана — торговые дни биржи. Добавляем и дни, где у Massive
-    # есть данные, хотя календарь считает их выходными (так было 09.01.2025).
+    # есть данные, хотя календарь считает их выходными (так было 09.01.2025 и 04.07.2025).
     massive_days = {day for by_day in volumes.values() for day in by_day}
     days = sorted(set(trading_days(FUTURES_CALENDAR)) | massive_days)
 

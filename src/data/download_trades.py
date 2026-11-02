@@ -6,8 +6,8 @@
 такого контракта качаем все сделки за эти дни и сохраняем как пришли,
 без обработки. Один файл — один контракт за один месяц.
 
-Если файл уже есть, его не качаем заново. Поэтому после обрыва
-скрипт можно просто запустить ещё раз.
+Если файл уже есть, докачиваем только дни, которых в нём нет. Поэтому
+после обрыва или изменения плана скрипт можно просто запустить ещё раз.
 
 Запуск (из корня проекта):
     python -m src.data.download_trades --product CL
@@ -21,6 +21,8 @@ import argparse
 import time
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from src.data.massive_api import get_api_key, massive_get_all
 from src.data.project_config import (END, FUTURES_PLAN_DIR, RAW_DIR, START,
@@ -63,10 +65,8 @@ def download_month(ticker: str, days: list, api_key: str) -> pd.DataFrame:
     """
     Качает сделки контракта за все его дни месяца и склеивает в одну таблицу.
 
-    Для проверки сравниваем сумму объёмов сделок за день с дневным
-    объёмом из плана (он взят из дневного бара Massive): если всё
-    скачалось, они совпадают. Исключение — зерновые за 9 дней: там дневной
-    бар включает ещё и предыдущий день, и предупреждение ожидаемо (см. README).
+    Для проверки сравниваем сумму объёмов сделок за день с дневным объёмом
+    из плана (сумма часовых баров): если всё скачалось, они совпадают.
     """
     tables = []
     for day, volume in days:
@@ -74,14 +74,33 @@ def download_month(ticker: str, days: list, api_key: str) -> pd.DataFrame:
         if trades.empty:
             print(f"    {day} {ticker}: сделок нет")
             continue
-        if volume == 0:
-            print(f"    {day} {ticker}: нет дневного бара, проверить объём нечем")
-        elif trades["size"].sum() != volume:
+        if trades["size"].sum() != volume:
             print(f"    {day} {ticker}: ВНИМАНИЕ: объём сделок {trades['size'].sum()}, а в плане {volume}")
         tables.append(trades)
     if not tables:
         return pd.DataFrame()
     return pd.concat(tables, ignore_index=True)
+
+
+def missing_days(out_file, days: list) -> list:
+    """Какие дни с торгами ещё не попали в файл сделок."""
+    column = "session_end_date"
+    saved = set(pq.read_table(out_file, columns=[column]).column(column).unique().to_pylist())
+    return [(day, volume) for day, volume in days if volume > 0 and day not in saved]
+
+
+def add_to_file(out_file, tmp_file, trades: pd.DataFrame) -> None:
+    """
+    Записывает в tmp_file старые сделки из out_file и новые из trades.
+
+    Старые переписываем по частям, а не читаем файл целиком:
+    файл сделок за месяц бывает больше оперативной памяти.
+    """
+    old = pq.ParquetFile(out_file)
+    with pq.ParquetWriter(tmp_file, old.schema_arrow) as writer:
+        for group in range(old.num_row_groups):
+            writer.write_table(old.read_row_group(group))
+        writer.write_table(pa.Table.from_pandas(trades, schema=old.schema_arrow, preserve_index=False))
 
 
 def download_trades(product: str, start_month: str, end_month: str, api_key: str) -> None:
@@ -93,8 +112,11 @@ def download_trades(product: str, start_month: str, end_month: str, api_key: str
 
     for (ticker, month), days in months.items():
         out_file = TRADES_DIR / product / ticker / f"{month}.parquet"
-        if out_file.exists():
-            continue  # уже скачано раньше — не качаем заново
+        already_saved = out_file.exists()
+        if already_saved:
+            days = missing_days(out_file, days)
+            if not days:
+                continue  # всё уже скачано — не качаем заново
         started = time.time()
         trades = download_month(ticker, days, api_key)
         if trades.empty:
@@ -105,7 +127,10 @@ def download_trades(product: str, start_month: str, end_month: str, api_key: str
         # и при следующем запуске этот месяц скачается заново.
         out_file.parent.mkdir(parents=True, exist_ok=True)
         tmp_file = out_file.with_suffix(".parquet.tmp")
-        trades.to_parquet(tmp_file, index=False)
+        if already_saved:
+            add_to_file(out_file, tmp_file, trades)
+        else:
+            trades.to_parquet(tmp_file, index=False)
         tmp_file.rename(out_file)
         print(f"  {ticker} {month}: дней {len(days)}, сделок {len(trades)}, {time.time() - started:.0f} с")
 
