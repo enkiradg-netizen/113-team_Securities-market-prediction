@@ -13,11 +13,15 @@ from src.data.project_config import PROJECT_DIR
 API_URL = "https://api.massive.com"
 
 
-def get_api_key() -> str:
-    """Берёт ключ Massive из файла .env."""
-    key = dotenv_values(PROJECT_DIR / ".env").get("MASSIVE_API_KEY")
+def get_api_key(asset: str) -> str:
+    """
+    Берёт ключ Massive из файла .env. Подписки на фьючерсы и акции разные,
+    поэтому и ключи разные: asset — это "futures" или "stocks".
+    """
+    name = f"MASSIVE_API_KEY_{asset.upper()}"
+    key = dotenv_values(PROJECT_DIR / ".env").get(name)
     if not key:
-        raise ValueError("В .env нет MASSIVE_API_KEY. Скопируйте .env.example в .env.")
+        raise ValueError(f"В .env нет {name}. Шаблон ключей — в .env.example.")
     return key
 
 
