@@ -174,3 +174,12 @@ python -m src.data.continuous --product CL NG       # склейка в непр
 python -m src.data.download_trades --product CL NG  # сделки, это долго
 ```
 Вместо `--product` можно указать `--member` и имя участника из `config/instruments.yaml`. При временной ошибке Massive скрипты сами повторяют запрос. Если скрипт всё же остановился, запустите ту же команду ещё раз: `download_trades` докачает только недостающие дни.
+
+## Просмотр графиков:
+Страница со свечами, объёмом и днями склейки по склеенным фьючерсам. Работает на своём компьютере, нужен интернет для библиотеки графика. Запуск из корня проекта:
+```bash
+pip install -r requirements.txt
+python -m src.data.get_data processed
+streamlit run src/service/chart_app.py
+```
+Страница откроется по адресу http://localhost:8501. Слева выбираются фьючерс, таймфрейм и период.

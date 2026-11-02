@@ -1,0 +1,17 @@
+# Настройки страницы просмотра графиков (src/service/chart_app.py).
+[server]
+# Страницу видно только на своём компьютере, другим в той же сети она недоступна.
+address = "localhost"
+headless = true
+
+[browser]
+# Не отправлять статистику использования разработчикам Streamlit.
+gatherUsageStats = false
+
+[client]
+# Убрать кнопку Deploy и меню разработчика.
+toolbarMode = "minimal"
+
+[theme]
+# График нарисован на белом фоне, поэтому и страница всегда светлая.
+base = "light"
