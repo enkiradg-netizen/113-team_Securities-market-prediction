@@ -7,6 +7,7 @@ python-dotenv==1.0.1
 
 # Работа с таблицами
 pandas==2.3.3
+numpy==2.5.4
 
 # Биржевые календари: торговые дни и праздники
 pandas_market_calendars==5.5.0

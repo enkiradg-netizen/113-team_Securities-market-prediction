@@ -187,7 +187,7 @@ stocks:
     - {ticker: SHW, name: "The Sherwin-Williams Company", weight: 0.11}
     - {ticker: APD, name: "Air Products & Chemicals, Inc.", weight: 0.10}
     - {ticker: NUE, name: "Nucor Corporation", weight: 0.09}
-    - {ticker: CRH, name: "CRH Public Limited Company", weight: 0.09, previous_tickers: [{ticker: CRHC, renamed: "2023-09-25"}]}
+    - {ticker: CRH, name: "CRH Public Limited Company", weight: 0.09}
     - {ticker: VMC, name: "Vulcan Materials Company(Holding Company)", weight: 0.05}
     - {ticker: STLD, name: "Steel Dynamics Inc", weight: 0.05}
 
