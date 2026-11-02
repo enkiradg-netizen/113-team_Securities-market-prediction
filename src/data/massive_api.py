@@ -5,12 +5,19 @@
 и для акций. Шаблон ключей — .env.example.
 """
 
+import time
+
 import requests
 from dotenv import dotenv_values
 
 from src.data.project_config import PROJECT_DIR
 
 API_URL = "https://api.massive.com"
+
+# Временные ошибки сервера: на них стоит подождать и повторить запрос.
+RETRY_STATUSES = {429, 500, 502, 503, 504}
+MAX_TRIES = 5
+RETRY_PAUSE = 30  # секунд между попытками
 
 
 def get_api_key(asset: str) -> str:
@@ -25,6 +32,28 @@ def get_api_key(asset: str) -> str:
     return key
 
 
+def get_page(url: str, params: dict | None, headers: dict) -> dict:
+    """
+    Запрашивает одну порцию данных у Massive.
+
+    При временной ошибке сервера или сети ждёт и повторяет запрос.
+    Постоянная ошибка (например, неверный ключ) сразу останавливает скрипт.
+    """
+    for attempt in range(1, MAX_TRIES + 1):
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=120)
+            if response.status_code not in RETRY_STATUSES:
+                response.raise_for_status()
+                return response.json()
+            problem = f"код ответа {response.status_code}"
+        except (requests.ConnectionError, requests.Timeout) as error:
+            problem = type(error).__name__
+        print(f"    Massive: {problem}, попытка {attempt} из {MAX_TRIES}")
+        if attempt < MAX_TRIES:
+            time.sleep(RETRY_PAUSE)
+    raise RuntimeError(f"Massive не отвечает ({problem}). Запустите ту же команду ещё раз чуть позже.")
+
+
 def massive_get_all(path: str, params: dict, api_key: str) -> list:
     """
     Делает запрос к Massive и собирает все страницы ответа.
@@ -36,9 +65,7 @@ def massive_get_all(path: str, params: dict, api_key: str) -> list:
     url = API_URL + path
     results = []
     while url:
-        response = requests.get(url, params=params, headers=headers, timeout=120)
-        response.raise_for_status()
-        data = response.json()
+        data = get_page(url, params, headers)
         results += data.get("results", [])
         url = data.get("next_url")
         params = None  # в next_url параметры уже есть
