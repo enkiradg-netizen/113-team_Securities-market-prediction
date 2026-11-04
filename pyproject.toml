@@ -1,0 +1,25 @@
+[project]
+name = "project_apollo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "upgradex906", email = "upgradex906@gmail.com" }
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "numpy==2.5.4",
+    "pandas==2.3.3",
+    "pandas-market-calendars==5.5.0",
+    "pyarrow==21.0.0",
+    "python-dotenv==1.0.1",
+    "pyyaml==6.0.2",
+    "requests==2.32.3",
+]
+
+[project.scripts]
+project_apollo = "project_apollo:main"
+
+[build-system]
+requires = ["uv_build>=0.12.18,<0.13.0"]
+build-backend = "uv_build"

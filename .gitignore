@@ -1,7 +1,23 @@
 # Окружение и кеш Python
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Сборка Python-пакетов
+build/
+dist/
+*.egg-info/
+
+# Отчеты покрытия тестами
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Данные и локальная база
 /data/
@@ -11,6 +27,12 @@ __pycache__/
 
 # Секреты
 .env
+.env.*
+!.env.example
+
+# Локальные настройки IDE
+.idea/
+.vscode/
 
 # Системные файлы macOS
 .DS_Store
