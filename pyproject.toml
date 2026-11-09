@@ -1,10 +1,12 @@
 [project]
 name = "project_apollo"
 version = "0.1.0"
-description = "Add your description here"
+description = "Годовой проект по анализу цен на акции и фьючерсы"
 readme = "README.md"
 authors = [
-    { name = "upgradex906", email = "upgradex906@gmail.com" }
+    { name = "AlexxxTyurin" },
+    { name = "enkiradg-netizen" },
+    { name = "iuriikrot" }
 ]
 requires-python = ">=3.13,<3.14"
 dependencies = [
