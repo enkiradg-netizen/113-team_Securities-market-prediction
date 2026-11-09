@@ -1,6 +1,9 @@
 # Запросы к API Massive
 requests==2.32.3
 
+# Скачивание файлов Massive (Flat Files) для расчёта стороны сделок
+minio==7.2.20
+
 # Чтение конфига и ключей
 PyYAML==6.0.2
 python-dotenv==1.0.1

@@ -16,7 +16,7 @@ data/ проекта с той же структурой, где их ждут �
 
 Запуск (из корня проекта):
     python -m src.data.get_data                     # всё
-    python -m src.data.get_data processed           # только склеенные ряды
+    python -m src.data.get_data processed           # готовые ряды, без сделок
     python -m src.data.get_data raw/futures/bars    # только бары
 
 Чтобы получить данные только своих инструментов, удобнее команда
@@ -63,14 +63,18 @@ def download(box: str, part: str) -> None:
     --partial — недокачанный файл не выбрасывать, а докачать в следующий раз;
     --exclude .ssh — не скачивать файл с ключами доступа: он лежит прямо в папке данных;
     -e — как подключаться к диску (см. ssh_command).
+
+    Папка processed без сделок: они весят десятки гигабайт, их просят отдельно,
+    командой с processed/futures_trades.
     """
     part = part.strip("/")
     local_dir = DATA_DIR / part if part else DATA_DIR
     local_dir.mkdir(parents=True, exist_ok=True)
     prefix = remote_prefix(box)
     remote_dir = f"{prefix}{part}/" if part else f"{prefix}./"
+    skip_trades = ["--exclude", "futures_trades"] if part == "processed" else []
     command = [
-        "rsync", "-a", "--partial", "--exclude", ".ssh", "--info=stats1,progress2", "-e", ssh_command(),
+        "rsync", "-a", "--partial", "--exclude", ".ssh", *skip_trades, "--info=stats1,progress2", "-e", ssh_command(),
         f"{box}:{remote_dir}", f"{local_dir}/",
     ]
     run_rsync(command)

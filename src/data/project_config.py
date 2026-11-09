@@ -19,7 +19,7 @@ END = date(2026, 9, 30)
 # Корень проекта и папки с данными (data/ в git не попадает).
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_DIR / "data" / "raw"              # данные как пришли из Massive
-INTERIM_DIR = PROJECT_DIR / "data" / "interim"      # промежуточные: план контрактов
+INTERIM_DIR = PROJECT_DIR / "data" / "interim"      # промежуточные: вспомогательная таблица для сборки склеенных фьючерсов
 PROCESSED_DIR = PROJECT_DIR / "data" / "processed"  # готовые: склеенные ряды
 
 # Календарь торговых дней CME. Это торговые даты биржи: в праздники

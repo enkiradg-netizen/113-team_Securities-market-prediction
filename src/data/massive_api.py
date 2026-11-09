@@ -9,10 +9,12 @@ import time
 
 import requests
 from dotenv import dotenv_values
+from minio import Minio
 
 from src.data.project_config import PROJECT_DIR
 
 API_URL = "https://api.massive.com"
+FILES_HOST = "files.massive.com"  # Flat Files: готовые файлы за день
 
 # Временные ошибки сервера: на них стоит подождать и повторить запрос.
 RETRY_STATUSES = {429, 500, 502, 503, 504}
@@ -30,6 +32,20 @@ def get_api_key(asset: str) -> str:
     if not key:
         raise SystemExit(f"В .env нет {name}. Шаблон ключей — в .env.example.")
     return key
+
+
+def get_files_client() -> Minio:
+    """
+    Подключение к Flat Files Massive. Ключи к файлам отдельные от ключа API, они тоже лежат в .env.
+    Файлы лежат в хранилище типа S3, скачиваем их библиотекой minio.
+    """
+    env = dotenv_values(PROJECT_DIR / ".env")
+    access_key = env.get("MASSIVE_S3_ACCESS_KEY_FUTURES")
+    secret_key = env.get("MASSIVE_S3_SECRET_KEY_FUTURES")
+    if not access_key or not secret_key:
+        raise SystemExit("В .env нет MASSIVE_S3_ACCESS_KEY_FUTURES или MASSIVE_S3_SECRET_KEY_FUTURES. "
+                         "Шаблон ключей — в .env.example.")
+    return Minio(FILES_HOST, access_key=access_key, secret_key=secret_key, secure=True)
 
 
 def get_page(url: str, params: dict | None, headers: dict) -> dict:

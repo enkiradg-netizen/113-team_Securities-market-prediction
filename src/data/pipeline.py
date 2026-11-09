@@ -10,7 +10,8 @@ API Massive), что брать (фьючерсы, акции или всё) и 
 результат получается такой же, но нужны ключи Massive и больше времени.
 
 Сам скрипт ничего не считает, он только запускает обычные шаги по порядку:
-    фьючерсы: contract_plan → download_bars → continuous → download_trades (по желанию);
+    фьючерсы: contract_plan → download_bars → continuous, а по желанию ещё
+              download_trades → prepare_trade_sides (сделки с расчётной стороной);
     акции: download_stock_bars → prepare_stock_bars.
 
 Запуск (из корня проекта):
@@ -24,7 +25,7 @@ import subprocess
 import sys
 
 from src.data.get_data import download_matching
-from src.data.massive_api import get_api_key
+from src.data.massive_api import get_api_key, get_files_client
 from src.data.project_config import futures_to_process, load_instruments, stocks_to_process
 from src.data.upload_data import get_storage_box
 
@@ -70,7 +71,7 @@ def futures_patterns(codes: list, trades: bool) -> list:
         patterns += [f"/processed/futures_continuous/{code}_*", f"/interim/futures_plan/{code}.csv",
                      f"/raw/futures/bars/*/{code}/**"]
         if trades:
-            patterns.append(f"/raw/futures/trades/{code}/**")
+            patterns.append(f"/processed/futures_trades/{code}/**")
     return patterns
 
 
@@ -98,6 +99,7 @@ def run_api_futures(member: str | None, codes: list, trades: bool) -> None:
         run_step(module, who)
     if trades:
         run_step("download_trades", who)
+        run_step("prepare_trade_sides", who)
 
 
 def run_api_stocks(member: str | None, codes: list | None) -> None:
@@ -115,7 +117,7 @@ def main() -> None:
     who.add_argument("--member", help="только один участник из config/instruments.yaml, например iura")
     who.add_argument("--everyone", action="store_true", help="все инструменты")
     who.add_argument("--codes", nargs="+", help="только эти коды, с --asset futures или --asset stocks")
-    parser.add_argument("--trades", choices=["yes", "no"], help="качать ли сделки фьючерсов (около 44 ГБ)")
+    parser.add_argument("--trades", choices=["yes", "no"], help="качать ли сделки фьючерсов (около 60 ГБ)")
     args = parser.parse_args()
 
     config = load_instruments()
@@ -140,7 +142,7 @@ def main() -> None:
     want_stocks = asset in ("stocks", "all")
     trades = False
     if want_futures:
-        answer = args.trades or ask("Качать сделки фьючерсов? Все вместе около 44 ГБ, через API это очень долго.",
+        answer = args.trades or ask("Качать сделки фьючерсов? Все вместе около 60 ГБ, через API это очень долго.",
                                     [("no", "Нет"), ("yes", "Да")], default="no")
         trades = answer == "yes"
 
@@ -155,8 +157,12 @@ def main() -> None:
     else:
         if want_futures:
             get_api_key("futures")
+            print("Massive отдаёт по фьючерсам только последние 5 лет, поэтому самые старые дни могут оказаться пустыми. "
+                  "Полный период есть на общем диске.")
         if want_stocks:
             get_api_key("stocks")
+        if trades:
+            get_files_client()
         if want_futures:
             run_api_futures(member, futures_codes, trades)
         if want_stocks:
